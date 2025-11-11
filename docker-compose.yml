@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fullstack_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fullstack_db
+      MYSQL_USER: fullstack_user
+      MYSQL_PASSWORD: fullstack_password
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fullstack_network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fullstack_backend
+    environment:
+      - DEBUG=1
+      - DB_HOST=mysql
+      - DB_NAME=fullstack_db
+      - DB_USER=fullstack_user
+      - DB_PASSWORD=fullstack_password
+      - SECRET_KEY=your-secret-key-change-in-production
+      - PYTHONPATH=/app:/app/apps
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mysql
+    networks:
+      - fullstack_network
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fullstack_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - fullstack_network
+
+  api-generator:
+    image: node:18
+    build: ./frontend
+    container_name: fullstack_api_generator
+    volumes:
+      - ./frontend:/app
+      - ./backend:/app/backend
+    working_dir: /app
+    depends_on:
+      - backend
+    networks:
+      - fullstack_network
+    environment:
+      - PYTHONPATH=/app
+    profiles:
+      - tools
+    command: >
+      sh -c "apt-get update && apt-get install -y wget &&
+            until wget -qO- http://backend:8000/api/schema/ > /dev/null; do
+              echo 'Waiting for backend...'; sleep 2;
+            done &&
+            wget -O openapi-schema.json http://backend:8000/api/schema/ &&
+            npm install &&
+            npm run generate-api"
+
+volumes:
+  mysql_data:
+
+networks:
+  fullstack_network:
+    driver: bridge
