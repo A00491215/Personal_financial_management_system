@@ -11,20 +11,30 @@
  */
 
 /**
+ * * `daily` - Daily
  * * `weekly` - Weekly
  * * `monthly` - Monthly
+ * * `yearly` - Yearly
  */
 export enum BudgetPreferenceEnum {
+  Daily = "daily",
   Weekly = "weekly",
   Monthly = "monthly",
+  Yearly = "yearly",
 }
 
-export interface ChildrenContributions {
-  id: number;
-  user: number;
-  /** @maxLength 150 */
+export interface Category {
+  category_id: number;
+  /** @maxLength 100 */
+  name: string;
+}
+
+export interface ChildrenContribution {
+  child_id: number;
+  user_id: number;
+  /** @maxLength 100 */
   child_name: string;
-  /** @maxLength 150 */
+  /** @maxLength 100 */
   parent_name: string;
   /**
    * @format decimal
@@ -38,24 +48,23 @@ export interface ChildrenContributions {
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at: string;
+  user_username: string;
 }
 
 export interface Expense {
-  id: number;
-  user: number;
-  /** @maxLength 255 */
-  description: string;
-  /** @maxLength 100 */
-  category: string;
+  /** @format date */
+  expense_date: string;
+  user_id: number;
+  category_id: number;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   amount: string;
-  /** @format date */
-  expense_date: string;
   /** @format date-time */
   created_at: string;
+  user_username: string;
+  category_name: string;
 }
 
 export interface Milestone {
@@ -65,12 +74,18 @@ export interface Milestone {
   description?: string | null;
 }
 
-export interface PatchedChildrenContributions {
-  id?: number;
-  user?: number;
-  /** @maxLength 150 */
+export interface PatchedCategory {
+  category_id?: number;
+  /** @maxLength 100 */
+  name?: string;
+}
+
+export interface PatchedChildrenContribution {
+  child_id?: number;
+  user_id?: number;
+  /** @maxLength 100 */
   child_name?: string;
-  /** @maxLength 150 */
+  /** @maxLength 100 */
   parent_name?: string;
   /**
    * @format decimal
@@ -84,24 +99,30 @@ export interface PatchedChildrenContributions {
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at?: string;
+  user_username?: string;
 }
 
 export interface PatchedExpense {
-  id?: number;
-  user?: number;
-  /** @maxLength 255 */
-  description?: string;
-  /** @maxLength 100 */
-  category?: string;
+  /** @format date */
+  expense_date?: string;
+  user_id?: number;
+  category_id?: number;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   amount?: string;
-  /** @format date */
-  expense_date?: string;
   /** @format date-time */
   created_at?: string;
+  user_username?: string;
+  category_name?: string;
+}
+
+export interface PatchedMilestone {
+  milestone_id?: number;
+  /** @maxLength 200 */
+  title?: string;
+  description?: string | null;
 }
 
 export interface PatchedUser {
@@ -113,19 +134,23 @@ export interface PatchedUser {
    * @maxLength 254
    */
   email?: string;
+  /** @maxLength 128 */
+  password?: string;
   /**
    * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   salary?: string | null;
   /**
    * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  total_balance?: string;
+  total_balance?: string | null;
   /**
+   * * `daily` - Daily
    * * `weekly` - Weekly
    * * `monthly` - Monthly
+   * * `yearly` - Yearly
    */
   budget_preference?: BudgetPreferenceEnum;
   email_notification?: boolean;
@@ -135,25 +160,22 @@ export interface PatchedUser {
   updated_at?: string;
 }
 
-export interface PatchedUserMilestones {
-  id?: number;
-  user?: number;
-  milestone?: number;
-  milestone_details?: Milestone;
+export interface PatchedUserMilestone {
+  umid?: number;
+  user_id?: number;
+  milestone_id?: number;
   is_completed?: boolean;
   /** @format date-time */
   completed_at?: string | null;
+  user_username?: string;
+  milestone_title?: string;
+  milestone_details?: Milestone;
 }
 
-export interface PatchedUserResponses {
+export interface PatchedUserResponse {
   response_id?: number;
-  user?: number;
+  user_id?: number;
   salary_confirmed?: boolean;
-  /**
-   * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
-   */
-  salary?: string | null;
   emergency_savings?: boolean;
   /**
    * @format decimal
@@ -187,6 +209,7 @@ export interface PatchedUserResponses {
   mortgage_remaining?: string | null;
   /** @format date-time */
   submitted_at?: string;
+  user_username?: string;
 }
 
 export interface User {
@@ -198,19 +221,23 @@ export interface User {
    * @maxLength 254
    */
   email: string;
+  /** @maxLength 128 */
+  password: string;
   /**
    * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   salary?: string | null;
   /**
    * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  total_balance?: string;
+  total_balance?: string | null;
   /**
+   * * `daily` - Daily
    * * `weekly` - Weekly
    * * `monthly` - Monthly
+   * * `yearly` - Yearly
    */
   budget_preference?: BudgetPreferenceEnum;
   email_notification?: boolean;
@@ -220,25 +247,22 @@ export interface User {
   updated_at: string;
 }
 
-export interface UserMilestones {
-  id: number;
-  user: number;
-  milestone: number;
-  milestone_details: Milestone;
+export interface UserMilestone {
+  umid: number;
+  user_id: number;
+  milestone_id: number;
   is_completed?: boolean;
   /** @format date-time */
-  completed_at: string | null;
+  completed_at?: string | null;
+  user_username: string;
+  milestone_title: string;
+  milestone_details: Milestone;
 }
 
-export interface UserResponses {
+export interface UserResponse {
   response_id: number;
-  user: number;
+  user_id: number;
   salary_confirmed?: boolean;
-  /**
-   * @format decimal
-   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
-   */
-  salary?: string | null;
   emergency_savings?: boolean;
   /**
    * @format decimal
@@ -272,31 +296,82 @@ export interface UserResponses {
   mortgage_remaining?: string | null;
   /** @format date-time */
   submitted_at: string;
+  user_username: string;
 }
 
-export type ChildrenContributionsListData = ChildrenContributions[];
+export type CategoriesListData = Category[];
 
-export type ChildrenContributionsCreateData = ChildrenContributions;
+export type CategoriesCreateData = Category;
+
+export interface CategoriesRetrieveParams {
+  /** A unique integer value identifying this category. */
+  categoryId: number;
+}
+
+export type CategoriesRetrieveData = Category;
+
+export interface CategoriesUpdateParams {
+  /** A unique integer value identifying this category. */
+  categoryId: number;
+}
+
+export type CategoriesUpdateData = Category;
+
+export interface CategoriesPartialUpdateParams {
+  /** A unique integer value identifying this category. */
+  categoryId: number;
+}
+
+export type CategoriesPartialUpdateData = Category;
+
+export interface CategoriesDestroyParams {
+  /** A unique integer value identifying this category. */
+  categoryId: number;
+}
+
+export type CategoriesDestroyData = any;
+
+export interface ChildrenContributionsListParams {
+  /** Filter children by user */
+  user_id?: number;
+}
+
+export type ChildrenContributionsListData = ChildrenContribution[];
+
+export interface ChildrenContributionsCreateParams {
+  /** Filter children by user */
+  user_id?: number;
+}
+
+export type ChildrenContributionsCreateData = ChildrenContribution;
 
 export interface ChildrenContributionsRetrieveParams {
+  /** Filter children by user */
+  user_id?: number;
   id: string;
 }
 
-export type ChildrenContributionsRetrieveData = ChildrenContributions;
+export type ChildrenContributionsRetrieveData = ChildrenContribution;
 
 export interface ChildrenContributionsUpdateParams {
+  /** Filter children by user */
+  user_id?: number;
   id: string;
 }
 
-export type ChildrenContributionsUpdateData = ChildrenContributions;
+export type ChildrenContributionsUpdateData = ChildrenContribution;
 
 export interface ChildrenContributionsPartialUpdateParams {
+  /** Filter children by user */
+  user_id?: number;
   id: string;
 }
 
-export type ChildrenContributionsPartialUpdateData = ChildrenContributions;
+export type ChildrenContributionsPartialUpdateData = ChildrenContribution;
 
 export interface ChildrenContributionsDestroyParams {
+  /** Filter children by user */
+  user_id?: number;
   id: string;
 }
 
@@ -307,30 +382,48 @@ export type ExpensesListData = Expense[];
 export type ExpensesCreateData = Expense;
 
 export interface ExpensesRetrieveParams {
-  id: string;
+  /**
+   * A unique value identifying this expense.
+   * @format date
+   */
+  expenseDate: string;
 }
 
 export type ExpensesRetrieveData = Expense;
 
 export interface ExpensesUpdateParams {
-  id: string;
+  /**
+   * A unique value identifying this expense.
+   * @format date
+   */
+  expenseDate: string;
 }
 
 export type ExpensesUpdateData = Expense;
 
 export interface ExpensesPartialUpdateParams {
-  id: string;
+  /**
+   * A unique value identifying this expense.
+   * @format date
+   */
+  expenseDate: string;
 }
 
 export type ExpensesPartialUpdateData = Expense;
 
 export interface ExpensesDestroyParams {
-  id: string;
+  /**
+   * A unique value identifying this expense.
+   * @format date
+   */
+  expenseDate: string;
 }
 
 export type ExpensesDestroyData = any;
 
 export type MilestonesListData = Milestone[];
+
+export type MilestonesCreateData = Milestone;
 
 export interface MilestonesRetrieveParams {
   /** A unique integer value identifying this milestone. */
@@ -339,61 +432,92 @@ export interface MilestonesRetrieveParams {
 
 export type MilestonesRetrieveData = Milestone;
 
-export type UserMilestonesListData = UserMilestones[];
+export interface MilestonesUpdateParams {
+  /** A unique integer value identifying this milestone. */
+  milestoneId: number;
+}
 
-export type UserMilestonesCreateData = UserMilestones;
+export type MilestonesUpdateData = Milestone;
+
+export interface MilestonesPartialUpdateParams {
+  /** A unique integer value identifying this milestone. */
+  milestoneId: number;
+}
+
+export type MilestonesPartialUpdateData = Milestone;
+
+export interface MilestonesDestroyParams {
+  /** A unique integer value identifying this milestone. */
+  milestoneId: number;
+}
+
+export type MilestonesDestroyData = any;
+
+export type UserMilestonesListData = UserMilestone[];
+
+export type UserMilestonesCreateData = UserMilestone;
 
 export interface UserMilestonesRetrieveParams {
-  id: string;
+  /** A unique integer value identifying this user milestone. */
+  umid: number;
 }
 
-export type UserMilestonesRetrieveData = UserMilestones;
+export type UserMilestonesRetrieveData = UserMilestone;
 
 export interface UserMilestonesUpdateParams {
-  id: string;
+  /** A unique integer value identifying this user milestone. */
+  umid: number;
 }
 
-export type UserMilestonesUpdateData = UserMilestones;
+export type UserMilestonesUpdateData = UserMilestone;
 
 export interface UserMilestonesPartialUpdateParams {
-  id: string;
+  /** A unique integer value identifying this user milestone. */
+  umid: number;
 }
 
-export type UserMilestonesPartialUpdateData = UserMilestones;
+export type UserMilestonesPartialUpdateData = UserMilestone;
 
 export interface UserMilestonesDestroyParams {
-  id: string;
+  /** A unique integer value identifying this user milestone. */
+  umid: number;
 }
 
 export type UserMilestonesDestroyData = any;
 
-export type UserResponsesListData = UserResponses[];
+export type UserResponsesListData = UserResponse[];
 
-export type UserResponsesCreateData = UserResponses;
+export type UserResponsesCreateData = UserResponse;
 
 export interface UserResponsesRetrieveParams {
-  id: string;
+  /** A unique integer value identifying this user response. */
+  responseId: number;
 }
 
-export type UserResponsesRetrieveData = UserResponses;
+export type UserResponsesRetrieveData = UserResponse;
 
 export interface UserResponsesUpdateParams {
-  id: string;
+  /** A unique integer value identifying this user response. */
+  responseId: number;
 }
 
-export type UserResponsesUpdateData = UserResponses;
+export type UserResponsesUpdateData = UserResponse;
 
 export interface UserResponsesPartialUpdateParams {
-  id: string;
+  /** A unique integer value identifying this user response. */
+  responseId: number;
 }
 
-export type UserResponsesPartialUpdateData = UserResponses;
+export type UserResponsesPartialUpdateData = UserResponse;
 
 export interface UserResponsesDestroyParams {
-  id: string;
+  /** A unique integer value identifying this user response. */
+  responseId: number;
 }
 
 export type UserResponsesDestroyData = any;
+
+export type UserResponsesMilestonesStatusRetrieveData = UserResponse;
 
 export type UsersListData = User[];
 
@@ -427,11 +551,7 @@ export interface UsersDestroyParams {
 
 export type UsersDestroyData = any;
 
-export type UsersProfileRetrieveData = User;
-
-export type UsersProfileUpdateData = User;
-
-export type UsersProfilePartialUpdateData = User;
+export type UsersLoginCreateData = User;
 
 export type UsersRegisterCreateData = User;
 
@@ -623,15 +743,140 @@ export class Api<
     /**
      * No description
      *
+     * @tags categories
+     * @name CategoriesList
+     * @request GET:/api/categories/
+     * @secure
+     */
+    categoriesList: (params: RequestParams = {}) =>
+      this.request<CategoriesListData, any>({
+        path: `/api/categories/`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags categories
+     * @name CategoriesCreate
+     * @request POST:/api/categories/
+     * @secure
+     */
+    categoriesCreate: (data: Category, params: RequestParams = {}) =>
+      this.request<CategoriesCreateData, any>({
+        path: `/api/categories/`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags categories
+     * @name CategoriesRetrieve
+     * @request GET:/api/categories/{category_id}/
+     * @secure
+     */
+    categoriesRetrieve: (
+      { categoryId, ...query }: CategoriesRetrieveParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<CategoriesRetrieveData, any>({
+        path: `/api/categories/${categoryId}/`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags categories
+     * @name CategoriesUpdate
+     * @request PUT:/api/categories/{category_id}/
+     * @secure
+     */
+    categoriesUpdate: (
+      { categoryId, ...query }: CategoriesUpdateParams,
+      data: Category,
+      params: RequestParams = {},
+    ) =>
+      this.request<CategoriesUpdateData, any>({
+        path: `/api/categories/${categoryId}/`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags categories
+     * @name CategoriesPartialUpdate
+     * @request PATCH:/api/categories/{category_id}/
+     * @secure
+     */
+    categoriesPartialUpdate: (
+      { categoryId, ...query }: CategoriesPartialUpdateParams,
+      data: PatchedCategory,
+      params: RequestParams = {},
+    ) =>
+      this.request<CategoriesPartialUpdateData, any>({
+        path: `/api/categories/${categoryId}/`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags categories
+     * @name CategoriesDestroy
+     * @request DELETE:/api/categories/{category_id}/
+     * @secure
+     */
+    categoriesDestroy: (
+      { categoryId, ...query }: CategoriesDestroyParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<CategoriesDestroyData, any>({
+        path: `/api/categories/${categoryId}/`,
+        method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
      * @tags children-contributions
      * @name ChildrenContributionsList
      * @request GET:/api/children-contributions/
      * @secure
      */
-    childrenContributionsList: (params: RequestParams = {}) =>
+    childrenContributionsList: (
+      query: ChildrenContributionsListParams,
+      params: RequestParams = {},
+    ) =>
       this.request<ChildrenContributionsListData, any>({
         path: `/api/children-contributions/`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -646,12 +891,14 @@ export class Api<
      * @secure
      */
     childrenContributionsCreate: (
-      data: ChildrenContributions,
+      query: ChildrenContributionsCreateParams,
+      data: ChildrenContribution,
       params: RequestParams = {},
     ) =>
       this.request<ChildrenContributionsCreateData, any>({
         path: `/api/children-contributions/`,
         method: "POST",
+        query: query,
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -674,6 +921,7 @@ export class Api<
       this.request<ChildrenContributionsRetrieveData, any>({
         path: `/api/children-contributions/${id}/`,
         method: "GET",
+        query: query,
         secure: true,
         format: "json",
         ...params,
@@ -689,12 +937,13 @@ export class Api<
      */
     childrenContributionsUpdate: (
       { id, ...query }: ChildrenContributionsUpdateParams,
-      data: ChildrenContributions,
+      data: ChildrenContribution,
       params: RequestParams = {},
     ) =>
       this.request<ChildrenContributionsUpdateData, any>({
         path: `/api/children-contributions/${id}/`,
         method: "PUT",
+        query: query,
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -712,12 +961,13 @@ export class Api<
      */
     childrenContributionsPartialUpdate: (
       { id, ...query }: ChildrenContributionsPartialUpdateParams,
-      data: PatchedChildrenContributions,
+      data: PatchedChildrenContribution,
       params: RequestParams = {},
     ) =>
       this.request<ChildrenContributionsPartialUpdateData, any>({
         path: `/api/children-contributions/${id}/`,
         method: "PATCH",
+        query: query,
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -740,6 +990,7 @@ export class Api<
       this.request<ChildrenContributionsDestroyData, any>({
         path: `/api/children-contributions/${id}/`,
         method: "DELETE",
+        query: query,
         secure: true,
         ...params,
       }),
@@ -785,15 +1036,15 @@ export class Api<
      *
      * @tags expenses
      * @name ExpensesRetrieve
-     * @request GET:/api/expenses/{id}/
+     * @request GET:/api/expenses/{expense_date}/
      * @secure
      */
     expensesRetrieve: (
-      { id, ...query }: ExpensesRetrieveParams,
+      { expenseDate, ...query }: ExpensesRetrieveParams,
       params: RequestParams = {},
     ) =>
       this.request<ExpensesRetrieveData, any>({
-        path: `/api/expenses/${id}/`,
+        path: `/api/expenses/${expenseDate}/`,
         method: "GET",
         secure: true,
         format: "json",
@@ -805,16 +1056,16 @@ export class Api<
      *
      * @tags expenses
      * @name ExpensesUpdate
-     * @request PUT:/api/expenses/{id}/
+     * @request PUT:/api/expenses/{expense_date}/
      * @secure
      */
     expensesUpdate: (
-      { id, ...query }: ExpensesUpdateParams,
+      { expenseDate, ...query }: ExpensesUpdateParams,
       data: Expense,
       params: RequestParams = {},
     ) =>
       this.request<ExpensesUpdateData, any>({
-        path: `/api/expenses/${id}/`,
+        path: `/api/expenses/${expenseDate}/`,
         method: "PUT",
         body: data,
         secure: true,
@@ -828,16 +1079,16 @@ export class Api<
      *
      * @tags expenses
      * @name ExpensesPartialUpdate
-     * @request PATCH:/api/expenses/{id}/
+     * @request PATCH:/api/expenses/{expense_date}/
      * @secure
      */
     expensesPartialUpdate: (
-      { id, ...query }: ExpensesPartialUpdateParams,
+      { expenseDate, ...query }: ExpensesPartialUpdateParams,
       data: PatchedExpense,
       params: RequestParams = {},
     ) =>
       this.request<ExpensesPartialUpdateData, any>({
-        path: `/api/expenses/${id}/`,
+        path: `/api/expenses/${expenseDate}/`,
         method: "PATCH",
         body: data,
         secure: true,
@@ -851,15 +1102,15 @@ export class Api<
      *
      * @tags expenses
      * @name ExpensesDestroy
-     * @request DELETE:/api/expenses/{id}/
+     * @request DELETE:/api/expenses/{expense_date}/
      * @secure
      */
     expensesDestroy: (
-      { id, ...query }: ExpensesDestroyParams,
+      { expenseDate, ...query }: ExpensesDestroyParams,
       params: RequestParams = {},
     ) =>
       this.request<ExpensesDestroyData, any>({
-        path: `/api/expenses/${id}/`,
+        path: `/api/expenses/${expenseDate}/`,
         method: "DELETE",
         secure: true,
         ...params,
@@ -886,6 +1137,25 @@ export class Api<
      * No description
      *
      * @tags milestones
+     * @name MilestonesCreate
+     * @request POST:/api/milestones/
+     * @secure
+     */
+    milestonesCreate: (data: Milestone, params: RequestParams = {}) =>
+      this.request<MilestonesCreateData, any>({
+        path: `/api/milestones/`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags milestones
      * @name MilestonesRetrieve
      * @request GET:/api/milestones/{milestone_id}/
      * @secure
@@ -899,6 +1169,71 @@ export class Api<
         method: "GET",
         secure: true,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags milestones
+     * @name MilestonesUpdate
+     * @request PUT:/api/milestones/{milestone_id}/
+     * @secure
+     */
+    milestonesUpdate: (
+      { milestoneId, ...query }: MilestonesUpdateParams,
+      data: Milestone,
+      params: RequestParams = {},
+    ) =>
+      this.request<MilestonesUpdateData, any>({
+        path: `/api/milestones/${milestoneId}/`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags milestones
+     * @name MilestonesPartialUpdate
+     * @request PATCH:/api/milestones/{milestone_id}/
+     * @secure
+     */
+    milestonesPartialUpdate: (
+      { milestoneId, ...query }: MilestonesPartialUpdateParams,
+      data: PatchedMilestone,
+      params: RequestParams = {},
+    ) =>
+      this.request<MilestonesPartialUpdateData, any>({
+        path: `/api/milestones/${milestoneId}/`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags milestones
+     * @name MilestonesDestroy
+     * @request DELETE:/api/milestones/{milestone_id}/
+     * @secure
+     */
+    milestonesDestroy: (
+      { milestoneId, ...query }: MilestonesDestroyParams,
+      params: RequestParams = {},
+    ) =>
+      this.request<MilestonesDestroyData, any>({
+        path: `/api/milestones/${milestoneId}/`,
+        method: "DELETE",
+        secure: true,
         ...params,
       }),
 
@@ -927,7 +1262,7 @@ export class Api<
      * @request POST:/api/user-milestones/
      * @secure
      */
-    userMilestonesCreate: (data: UserMilestones, params: RequestParams = {}) =>
+    userMilestonesCreate: (data: UserMilestone, params: RequestParams = {}) =>
       this.request<UserMilestonesCreateData, any>({
         path: `/api/user-milestones/`,
         method: "POST",
@@ -943,15 +1278,15 @@ export class Api<
      *
      * @tags user-milestones
      * @name UserMilestonesRetrieve
-     * @request GET:/api/user-milestones/{id}/
+     * @request GET:/api/user-milestones/{umid}/
      * @secure
      */
     userMilestonesRetrieve: (
-      { id, ...query }: UserMilestonesRetrieveParams,
+      { umid, ...query }: UserMilestonesRetrieveParams,
       params: RequestParams = {},
     ) =>
       this.request<UserMilestonesRetrieveData, any>({
-        path: `/api/user-milestones/${id}/`,
+        path: `/api/user-milestones/${umid}/`,
         method: "GET",
         secure: true,
         format: "json",
@@ -963,16 +1298,16 @@ export class Api<
      *
      * @tags user-milestones
      * @name UserMilestonesUpdate
-     * @request PUT:/api/user-milestones/{id}/
+     * @request PUT:/api/user-milestones/{umid}/
      * @secure
      */
     userMilestonesUpdate: (
-      { id, ...query }: UserMilestonesUpdateParams,
-      data: UserMilestones,
+      { umid, ...query }: UserMilestonesUpdateParams,
+      data: UserMilestone,
       params: RequestParams = {},
     ) =>
       this.request<UserMilestonesUpdateData, any>({
-        path: `/api/user-milestones/${id}/`,
+        path: `/api/user-milestones/${umid}/`,
         method: "PUT",
         body: data,
         secure: true,
@@ -986,16 +1321,16 @@ export class Api<
      *
      * @tags user-milestones
      * @name UserMilestonesPartialUpdate
-     * @request PATCH:/api/user-milestones/{id}/
+     * @request PATCH:/api/user-milestones/{umid}/
      * @secure
      */
     userMilestonesPartialUpdate: (
-      { id, ...query }: UserMilestonesPartialUpdateParams,
-      data: PatchedUserMilestones,
+      { umid, ...query }: UserMilestonesPartialUpdateParams,
+      data: PatchedUserMilestone,
       params: RequestParams = {},
     ) =>
       this.request<UserMilestonesPartialUpdateData, any>({
-        path: `/api/user-milestones/${id}/`,
+        path: `/api/user-milestones/${umid}/`,
         method: "PATCH",
         body: data,
         secure: true,
@@ -1009,15 +1344,15 @@ export class Api<
      *
      * @tags user-milestones
      * @name UserMilestonesDestroy
-     * @request DELETE:/api/user-milestones/{id}/
+     * @request DELETE:/api/user-milestones/{umid}/
      * @secure
      */
     userMilestonesDestroy: (
-      { id, ...query }: UserMilestonesDestroyParams,
+      { umid, ...query }: UserMilestonesDestroyParams,
       params: RequestParams = {},
     ) =>
       this.request<UserMilestonesDestroyData, any>({
-        path: `/api/user-milestones/${id}/`,
+        path: `/api/user-milestones/${umid}/`,
         method: "DELETE",
         secure: true,
         ...params,
@@ -1048,7 +1383,7 @@ export class Api<
      * @request POST:/api/user-responses/
      * @secure
      */
-    userResponsesCreate: (data: UserResponses, params: RequestParams = {}) =>
+    userResponsesCreate: (data: UserResponse, params: RequestParams = {}) =>
       this.request<UserResponsesCreateData, any>({
         path: `/api/user-responses/`,
         method: "POST",
@@ -1064,15 +1399,15 @@ export class Api<
      *
      * @tags user-responses
      * @name UserResponsesRetrieve
-     * @request GET:/api/user-responses/{id}/
+     * @request GET:/api/user-responses/{response_id}/
      * @secure
      */
     userResponsesRetrieve: (
-      { id, ...query }: UserResponsesRetrieveParams,
+      { responseId, ...query }: UserResponsesRetrieveParams,
       params: RequestParams = {},
     ) =>
       this.request<UserResponsesRetrieveData, any>({
-        path: `/api/user-responses/${id}/`,
+        path: `/api/user-responses/${responseId}/`,
         method: "GET",
         secure: true,
         format: "json",
@@ -1084,16 +1419,16 @@ export class Api<
      *
      * @tags user-responses
      * @name UserResponsesUpdate
-     * @request PUT:/api/user-responses/{id}/
+     * @request PUT:/api/user-responses/{response_id}/
      * @secure
      */
     userResponsesUpdate: (
-      { id, ...query }: UserResponsesUpdateParams,
-      data: UserResponses,
+      { responseId, ...query }: UserResponsesUpdateParams,
+      data: UserResponse,
       params: RequestParams = {},
     ) =>
       this.request<UserResponsesUpdateData, any>({
-        path: `/api/user-responses/${id}/`,
+        path: `/api/user-responses/${responseId}/`,
         method: "PUT",
         body: data,
         secure: true,
@@ -1107,16 +1442,16 @@ export class Api<
      *
      * @tags user-responses
      * @name UserResponsesPartialUpdate
-     * @request PATCH:/api/user-responses/{id}/
+     * @request PATCH:/api/user-responses/{response_id}/
      * @secure
      */
     userResponsesPartialUpdate: (
-      { id, ...query }: UserResponsesPartialUpdateParams,
-      data: PatchedUserResponses,
+      { responseId, ...query }: UserResponsesPartialUpdateParams,
+      data: PatchedUserResponse,
       params: RequestParams = {},
     ) =>
       this.request<UserResponsesPartialUpdateData, any>({
-        path: `/api/user-responses/${id}/`,
+        path: `/api/user-responses/${responseId}/`,
         method: "PATCH",
         body: data,
         secure: true,
@@ -1130,15 +1465,15 @@ export class Api<
      *
      * @tags user-responses
      * @name UserResponsesDestroy
-     * @request DELETE:/api/user-responses/{id}/
+     * @request DELETE:/api/user-responses/{response_id}/
      * @secure
      */
     userResponsesDestroy: (
-      { id, ...query }: UserResponsesDestroyParams,
+      { responseId, ...query }: UserResponsesDestroyParams,
       params: RequestParams = {},
     ) =>
       this.request<UserResponsesDestroyData, any>({
-        path: `/api/user-responses/${id}/`,
+        path: `/api/user-responses/${responseId}/`,
         method: "DELETE",
         secure: true,
         ...params,
@@ -1146,6 +1481,23 @@ export class Api<
 
     /**
      * No description
+     *
+     * @tags user-responses
+     * @name UserResponsesMilestonesStatusRetrieve
+     * @request GET:/api/user-responses/milestones-status/
+     * @secure
+     */
+    userResponsesMilestonesStatusRetrieve: (params: RequestParams = {}) =>
+      this.request<UserResponsesMilestonesStatusRetrieveData, any>({
+        path: `/api/user-responses/milestones-status/`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersList
@@ -1162,7 +1514,7 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersCreate
@@ -1181,7 +1533,7 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersRetrieve
@@ -1201,7 +1553,7 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersUpdate
@@ -1224,7 +1576,7 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersPartialUpdate
@@ -1247,7 +1599,7 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Handles: - /api/users/register/ - /api/users/login/ - /api/users/<id>/ (GET / PATCH)
      *
      * @tags users
      * @name UsersDestroy
@@ -1266,34 +1618,17 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Authenticate user with JWT tokens.
      *
      * @tags users
-     * @name UsersProfileRetrieve
-     * @request GET:/api/users/profile/
+     * @name UsersLoginCreate
+     * @request POST:/api/users/login/
      * @secure
      */
-    usersProfileRetrieve: (params: RequestParams = {}) =>
-      this.request<UsersProfileRetrieveData, any>({
-        path: `/api/users/profile/`,
-        method: "GET",
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
-     *
-     * @tags users
-     * @name UsersProfileUpdate
-     * @request PUT:/api/users/profile/
-     * @secure
-     */
-    usersProfileUpdate: (data: User, params: RequestParams = {}) =>
-      this.request<UsersProfileUpdateData, any>({
-        path: `/api/users/profile/`,
-        method: "PUT",
+    usersLoginCreate: (data: User, params: RequestParams = {}) =>
+      this.request<UsersLoginCreateData, any>({
+        path: `/api/users/login/`,
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -1302,29 +1637,7 @@ export class Api<
       }),
 
     /**
-     * No description
-     *
-     * @tags users
-     * @name UsersProfilePartialUpdate
-     * @request PATCH:/api/users/profile/
-     * @secure
-     */
-    usersProfilePartialUpdate: (
-      data: PatchedUser,
-      params: RequestParams = {},
-    ) =>
-      this.request<UsersProfilePartialUpdateData, any>({
-        path: `/api/users/profile/`,
-        method: "PATCH",
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    /**
-     * No description
+     * @description Create a new user and return JWT tokens.
      *
      * @tags users
      * @name UsersRegisterCreate
