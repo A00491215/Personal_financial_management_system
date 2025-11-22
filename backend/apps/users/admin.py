@@ -1,33 +1,31 @@
-# backend/apps/users/admin.py
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Category, Expense, ChildrenContribution, Milestone, UserMilestone, UserResponse
+from .models import (
+    User, Category, Expense, ChildrenContribution,
+    Milestone, UserMilestone, UserResponse
+)
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = [
         'user_id', 'username', 'email', 'salary', 'total_balance',
-        'budget_preference', 'email_notification', 'created_at'
+        'budget_preference', 'email_notification',
+        'created_at', 'updated_at'
     ]
     list_filter = ['budget_preference', 'email_notification', 'created_at']
     search_fields = ['username', 'email']
-    readonly_fields = ['user_id', 'created_at', 'updated_at']
+    readonly_fields = ['user_id', 'created_at', 'updated_at', 'last_login']
     ordering = ['-created_at']
 
     fieldsets = (
         (None, {'fields': ('username', 'email', 'password')}),
-        ('Financial Information', {'fields': ('salary', 'total_balance', 'budget_preference')}),
+        ('Financial Information', {
+            'fields': ('salary', 'total_balance', 'budget_preference')
+        }),
         ('Notifications', {'fields': ('email_notification',)}),
-        ('Important dates', {'fields': ('created_at', 'updated_at')}),
-    )
-
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('username', 'email', 'password', 'salary', 'total_balance', 'budget_preference'),
+        ('Important dates', {
+            'fields': ('created_at', 'updated_at', 'last_login')
         }),
     )
-
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -47,6 +45,12 @@ class ExpenseAdmin(admin.ModelAdmin):
     date_hierarchy = 'expense_date'
     ordering = ['-expense_date']
 
+    fieldsets = (
+        ('User Information', {'fields': ('user_id',)}),
+        ('Expense Details', {'fields': ('category_id', 'amount', 'expense_date')}),
+        ('Metadata', {'fields': ('created_at',)}),
+    )
+
 
 @admin.register(ChildrenContribution)
 class ChildrenContributionAdmin(admin.ModelAdmin):
@@ -58,6 +62,13 @@ class ChildrenContributionAdmin(admin.ModelAdmin):
     search_fields = ['child_name', 'parent_name', 'user_id__username']
     readonly_fields = ['child_id', 'created_at']
     ordering = ['-created_at']
+
+    fieldsets = (
+        ('User Information', {'fields': ('user_id',)}),
+        ('Child Information', {'fields': ('child_name', 'parent_name')}),
+        ('Contribution Details', {'fields': ('total_contribution_planned', 'monthly_contribution')}),
+        ('Metadata', {'fields': ('created_at',)}),
+    )
 
 
 @admin.register(Milestone)
@@ -76,6 +87,11 @@ class UserMilestoneAdmin(admin.ModelAdmin):
     search_fields = ['user_id__username', 'milestone_id__title']
     readonly_fields = ['umid']
     ordering = ['-completed_at']
+
+    fieldsets = (
+        ('Relationship', {'fields': ('user_id', 'milestone_id')}),
+        ('Status', {'fields': ('is_completed', 'completed_at')}),
+    )
 
 
 @admin.register(UserResponse)

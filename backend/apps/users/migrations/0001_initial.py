@@ -1,9 +1,13 @@
 # backend/apps/users/migrations/0001_initial.py
+
 from django.db import migrations, models
 import django.db.models.deletion
 from django.contrib.auth.hashers import make_password
 
 
+# ----------------------------
+# Seed Initial Users
+# ----------------------------
 def create_initial_users(apps, schema_editor):
     User = apps.get_model('users', 'User')
     User.objects.create(
@@ -14,6 +18,8 @@ def create_initial_users(apps, schema_editor):
         total_balance=50000.00,
         budget_preference='monthly',
         email_notification=True,
+        is_staff=True,
+        is_superuser=True,
     )
     User.objects.create(
         username='user1',
@@ -26,12 +32,34 @@ def create_initial_users(apps, schema_editor):
     )
 
 
+# ----------------------------
+# Seed Initial Categories
+# ----------------------------
+def create_categories(apps, schema_editor):
+    Category = apps.get_model('users', 'Category')
+    categories = [
+        "Emergency Savings",
+        "Full Emergency Savings",
+        "Retirement Investing",
+        "Children Contribution",
+        "Home Mortgage"
+    ]
+    for name in categories:
+        Category.objects.create(name=name)
+
+
 class Migration(migrations.Migration):
+
     initial = True
-    dependencies = []
+    dependencies = [
+        ('auth', '0012_alter_user_first_name_max_length'),  # Required for groups/permissions
+    ]
 
     operations = [
-       # User Table
+
+        # ------------------------------------------------------
+        # USERS TABLE (CUSTOM USER MODEL)
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='User',
             fields=[
@@ -39,8 +67,10 @@ class Migration(migrations.Migration):
                 ('username', models.CharField(max_length=150, unique=True)),
                 ('email', models.EmailField(max_length=254, unique=True)),
                 ('password', models.CharField(max_length=128)),
+
                 ('salary', models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)),
                 ('total_balance', models.DecimalField(max_digits=12, decimal_places=2, default=0.00)),
+
                 ('budget_preference', models.CharField(
                     max_length=20,
                     choices=[
@@ -51,14 +81,47 @@ class Migration(migrations.Migration):
                     ],
                     default='monthly'
                 )),
+
                 ('email_notification', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
+                ('last_login', models.DateTimeField(null=True, blank=True)),
+
+                # ⭐ REQUIRED BY DJANGO AUTH ⭐
+                ('is_active', models.BooleanField(default=True)),
+                ('is_staff', models.BooleanField(default=False)),
+                ('is_superuser', models.BooleanField(default=False)),
             ],
             options={'db_table': 'users'},
         ),
 
-        # Category Table
+        # ------------------------------------------------------
+        # MANY-TO-MANY FIELDS (FROM PermissionsMixin)
+        # ------------------------------------------------------
+        migrations.AddField(
+            model_name='user',
+            name='groups',
+            field=models.ManyToManyField(
+                related_name='user_set',
+                related_query_name='user',
+                to='auth.group',
+                blank=True
+            ),
+        ),
+        migrations.AddField(
+            model_name='user',
+            name='user_permissions',
+            field=models.ManyToManyField(
+                related_name='user_set',
+                related_query_name='user',
+                to='auth.permission',
+                blank=True
+            ),
+        ),
+
+        # ------------------------------------------------------
+        # CATEGORY TABLE
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='Category',
             fields=[
@@ -68,7 +131,9 @@ class Migration(migrations.Migration):
             options={'db_table': 'category'},
         ),
 
-        # Expense Table — expense_date as primary key surrogate
+        # ------------------------------------------------------
+        # EXPENSE TABLE
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='Expense',
             fields=[
@@ -76,7 +141,6 @@ class Migration(migrations.Migration):
                 ('amount', models.DecimalField(max_digits=10, decimal_places=2)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
 
-                # Foreign Keys
                 ('user_id', models.ForeignKey(
                     on_delete=django.db.models.deletion.CASCADE,
                     to='users.user',
@@ -94,7 +158,9 @@ class Migration(migrations.Migration):
             },
         ),
 
-        # Children_Contributions — surrogate PK but enforced unique triple
+        # ------------------------------------------------------
+        # CHILDREN CONTRIBUTION TABLE
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='ChildrenContribution',
             fields=[
@@ -121,7 +187,9 @@ class Migration(migrations.Migration):
             },
         ),
 
-        # Milestone Table
+        # ------------------------------------------------------
+        # MILESTONE TABLE
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='Milestone',
             fields=[
@@ -132,13 +200,16 @@ class Migration(migrations.Migration):
             options={'db_table': 'milestones'},
         ),
 
-        # User_Milestones
+        # ------------------------------------------------------
+        # USER MILESTONES
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='UserMilestone',
             fields=[
                 ('umid', models.BigAutoField(primary_key=True, serialize=False)),
                 ('is_completed', models.BooleanField(default=False)),
                 ('completed_at', models.DateTimeField(null=True, blank=True)),
+
                 ('user_id', models.ForeignKey(
                     on_delete=django.db.models.deletion.CASCADE,
                     to='users.user',
@@ -156,7 +227,9 @@ class Migration(migrations.Migration):
             },
         ),
 
-        # User_Responses
+        # ------------------------------------------------------
+        # USER RESPONSE TABLE
+        # ------------------------------------------------------
         migrations.CreateModel(
             name='UserResponse',
             fields=[
@@ -194,5 +267,10 @@ class Migration(migrations.Migration):
                 'unique_together': {('user_id', 'response_id')},
             },
         ),
+
+        # ------------------------------------------------------
+        # SEED DATA
+        # ------------------------------------------------------
         migrations.RunPython(create_initial_users),
+        migrations.RunPython(create_categories),
     ]

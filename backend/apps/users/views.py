@@ -1,193 +1,182 @@
 # backend/apps/users/views.py
+
+from decimal import Decimal
+
+from django.db.models import Sum
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from .models import User, Category, Expense, ChildrenContribution, Milestone, UserMilestone, UserResponse
-from .serializers import (
-    UserSerializer, UserRegistrationSerializer, CategorySerializer,
-    ExpenseSerializer, ChildrenContributionSerializer, MilestoneSerializer,
-    UserMilestoneSerializer, UserResponseSerializer
+from rest_framework.viewsets import ModelViewSet
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import (
+    User,
+    Category,
+    Expense,
+    ChildrenContribution,
+    Milestone,
+    UserMilestone,
+    UserResponse,
 )
 
+from .serializers import (
+    UserSerializer,
+    LoginSerializer,
+    CategorySerializer,
+    ExpenseSerializer,
+    ChildrenContributionSerializer,
+    MilestoneSerializer,
+    UserMilestoneSerializer,
+    UserResponseSerializer,
+    JWTLoginSerializer,
+)
+
+from .services import recalculate_baby_steps_and_email
+from .milestone_logic import evaluate_milestones
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+
+# =====================================================================
+#                           USER VIEWSET
+# =====================================================================
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    """
+    Handles:
+    - /api/users/register/
+    - /api/users/login/
+    - /api/users/<id>/ (GET / PATCH)
+    """
+    queryset = User.objects.all().order_by("user_id")
     serializer_class = UserSerializer
 
-    def get_permissions(self):
-        if self.action in ['create', 'register', 'login']:
-            return [AllowAny()]
-        return [IsAuthenticated()]
+    # ------------------------- REGISTER -------------------------
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny], url_path="register")
     def register(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """
+        Create a new user and return JWT tokens.
+        """
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def login(self, request):
-        username = request.data.get('username')
-        email = request.data.get('email')
-        password = request.data.get('password')
+        user = serializer.save()
 
-        if not password:
-            return Response(
-                {'error': 'Password is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            if username:
-                user = User.objects.get(username=username)
-            elif email:
-                user = User.objects.get(email=email)
-            else:
-                return Response(
-                    {'error': 'Username or email is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            if user.check_password(password):
-                serializer = self.get_serializer(user)
-                return Response({
-                    'message': 'Login successful',
-                    'user': serializer.data
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {'error': 'Invalid credentials'},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-        except User.DoesNotExist:
-            return Response(
-                {'error': 'Invalid credentials'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-    @action(detail=False, methods=['get', 'put', 'patch'])
-    def profile(self, request):
-        if request.method == 'GET':
-            serializer = UserSerializer(request.user)
-            return Response(serializer.data)
+        # Generate JWT token for the newly registered user
+        # DON'T use RefreshToken.for_user() - create manually
+        refresh = RefreshToken()
+        refresh["user_id"] = user.user_id
+        refresh["email"] = user.email
         
-        partial = request.method == 'PATCH'
-        serializer = UserSerializer(request.user, data=request.data, partial=partial)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        access = refresh.access_token
+        access["user_id"] = user.user_id
+        access["email"] = user.email
 
-    @action(detail=True, methods=['get'])
-    def expenses(self, request, pk=None):
-        user = self.get_object()
-        expenses = user.expenses.all()
-        serializer = ExpenseSerializer(expenses, many=True)
-        return Response(serializer.data)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "refresh": str(refresh),
+                "access": str(access),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
-    @action(detail=True, methods=['get'])
-    def children_contributions(self, request, pk=None):
-        user = self.get_object()
-        contributions = user.children_contributions.all()
-        serializer = ChildrenContributionSerializer(contributions, many=True)
-        return Response(serializer.data)
+    # --------------------------- LOGIN --------------------------
+    
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny], url_path="login")
+    def login(self, request):
+        """
+        Authenticate user with JWT tokens.
+        """
+        serializer = JWTLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    @action(detail=True, methods=['get'])
-    def milestones(self, request, pk=None):
-        user = self.get_object()
-        user_milestones = user.user_milestones.all()
-        serializer = UserMilestoneSerializer(user_milestones, many=True)
-        return Response(serializer.data)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
-    def responses(self, request, pk=None):
-        user = self.get_object()
-        responses = user.user_responses.all()
-        serializer = UserResponseSerializer(responses, many=True)
-        return Response(serializer.data)
 
+# =====================================================================
+#                       CATEGORY VIEWSET
+# =====================================================================
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by("name")
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
 
+
+# =====================================================================
+#                       EXPENSE VIEWSET
+# =====================================================================
 
 class ExpenseViewSet(viewsets.ModelViewSet):
-    queryset = Expense.objects.all()
+    queryset = Expense.objects.all().select_related("user_id", "category_id")
     serializer_class = ExpenseSerializer
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user_id = self.request.query_params.get('user_id', None)
-        category_id = self.request.query_params.get('category_id', None)
 
-        if user_id:
-            queryset = queryset.filter(user_id=user_id)
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
-
-        return queryset
-
+# =====================================================================
+#               CHILDREN CONTRIBUTIONS VIEWSET
+# =====================================================================
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="user_id",
+            type=int,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Filter children by user"
+        )
+    ]
+)
 
 class ChildrenContributionViewSet(viewsets.ModelViewSet):
-    queryset = ChildrenContribution.objects.all()
     serializer_class = ChildrenContributionSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user_id = self.request.query_params.get('user_id', None)
+        user_id = self.request.query_params.get("user_id")
+        qs = ChildrenContribution.objects.all()
 
         if user_id:
-            queryset = queryset.filter(user_id=user_id)
+            qs = qs.filter(user_id=user_id)
 
-        return queryset
+        return qs
 
+# =====================================================================
+#                        MILESTONE VIEWSETS
+# =====================================================================
 
 class MilestoneViewSet(viewsets.ModelViewSet):
-    queryset = Milestone.objects.all()
+    queryset = Milestone.objects.all().order_by("milestone_id")
     serializer_class = MilestoneSerializer
 
 
 class UserMilestoneViewSet(viewsets.ModelViewSet):
-    queryset = UserMilestone.objects.all()
+    queryset = UserMilestone.objects.all().select_related("user_id", "milestone_id")
     serializer_class = UserMilestoneSerializer
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user_id = self.request.query_params.get('user_id', None)
-        is_completed = self.request.query_params.get('is_completed', None)
 
-        if user_id:
-            queryset = queryset.filter(user_id=user_id)
-        if is_completed is not None:
-            queryset = queryset.filter(is_completed=is_completed.lower() == 'true')
-
-        return queryset
-
-    @action(detail=True, methods=['post'])
-    def complete(self, request, pk=None):
-        from django.utils import timezone
-        user_milestone = self.get_object()
-        user_milestone.is_completed = True
-        user_milestone.completed_at = timezone.now()
-        user_milestone.save()
-        serializer = self.get_serializer(user_milestone)
-        return Response(serializer.data)
-
+# =====================================================================
+#                       USER RESPONSE VIEWSET
+# =====================================================================
 
 class UserResponseViewSet(viewsets.ModelViewSet):
-    queryset = UserResponse.objects.all()
+    queryset = UserResponse.objects.all().select_related("user_id")
     serializer_class = UserResponseSerializer
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user_id = self.request.query_params.get('user_id', None)
+    # Check milestone progress
+    @action(detail=False, methods=["get"], url_path="milestones-status")
+    def milestone_status(self, request):
+        user_id = request.query_params.get("user_id")
+        data = evaluate_milestones(user_id)
+        return Response(data)
 
-        if user_id:
-            queryset = queryset.filter(user_id=user_id)
+    # When user submits Dave Ramsey form
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        recalculate_baby_steps_and_email(instance.user_id)
 
-        return queryset
+    # When the user updates the finance form
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        recalculate_baby_steps_and_email(instance.user_id)

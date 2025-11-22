@@ -1,0 +1,88 @@
+/* Auth pages are visually consistent with Baby Steps */
+
+.auth-wrapper {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  background: #f5f7fb; // same as Baby Steps background
+}
+
+/* Main card */
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+/* Inner card spacing */
+.auth-card .card-body {
+  padding: 2rem 2.25rem;
+}
+
+/* Title */
+.auth-title {
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.25rem;
+}
+
+/* Labels */
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+/* Inputs */
+.form-control,
+.form-select {
+  border-radius: 10px !important;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  background: #fafafa;
+  border: 1px solid #d1d5db;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.18);
+  background: #ffffff;
+}
+
+/* Checkbox */
+.form-check-input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+/* Button */
+.auth-button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Footer under form */
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.auth-footer a {
+  color: #0d6efd;
+  font-weight: 600;
+}

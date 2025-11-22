@@ -5,6 +5,16 @@
 
 
 export interface paths {
+  "/api/categories/": {
+    get: operations["categories_list"];
+    post: operations["categories_create"];
+  };
+  "/api/categories/{category_id}/": {
+    get: operations["categories_retrieve"];
+    put: operations["categories_update"];
+    delete: operations["categories_destroy"];
+    patch: operations["categories_partial_update"];
+  };
   "/api/children-contributions/": {
     get: operations["children_contributions_list"];
     post: operations["children_contributions_create"];
@@ -19,7 +29,7 @@ export interface paths {
     get: operations["expenses_list"];
     post: operations["expenses_create"];
   };
-  "/api/expenses/{id}/": {
+  "/api/expenses/{expense_date}/": {
     get: operations["expenses_retrieve"];
     put: operations["expenses_update"];
     delete: operations["expenses_destroy"];
@@ -27,15 +37,19 @@ export interface paths {
   };
   "/api/milestones/": {
     get: operations["milestones_list"];
+    post: operations["milestones_create"];
   };
   "/api/milestones/{milestone_id}/": {
     get: operations["milestones_retrieve"];
+    put: operations["milestones_update"];
+    delete: operations["milestones_destroy"];
+    patch: operations["milestones_partial_update"];
   };
   "/api/user-milestones/": {
     get: operations["user_milestones_list"];
     post: operations["user_milestones_create"];
   };
-  "/api/user-milestones/{id}/": {
+  "/api/user-milestones/{umid}/": {
     get: operations["user_milestones_retrieve"];
     put: operations["user_milestones_update"];
     delete: operations["user_milestones_destroy"];
@@ -45,28 +59,67 @@ export interface paths {
     get: operations["user_responses_list"];
     post: operations["user_responses_create"];
   };
-  "/api/user-responses/{id}/": {
+  "/api/user-responses/{response_id}/": {
     get: operations["user_responses_retrieve"];
     put: operations["user_responses_update"];
     delete: operations["user_responses_destroy"];
     patch: operations["user_responses_partial_update"];
   };
+  "/api/user-responses/milestones-status/": {
+    get: operations["user_responses_milestones_status_retrieve"];
+  };
   "/api/users/": {
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     get: operations["users_list"];
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     post: operations["users_create"];
   };
   "/api/users/{user_id}/": {
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     get: operations["users_retrieve"];
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     put: operations["users_update"];
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     delete: operations["users_destroy"];
+    /**
+     * @description Handles:
+     * - /api/users/register/
+     * - /api/users/login/
+     * - /api/users/<id>/ (GET / PATCH)
+     */
     patch: operations["users_partial_update"];
   };
-  "/api/users/profile/": {
-    get: operations["users_profile_retrieve"];
-    put: operations["users_profile_update"];
-    patch: operations["users_profile_partial_update"];
+  "/api/users/login/": {
+    /** @description Authenticate user with JWT tokens. */
+    post: operations["users_login_create"];
   };
   "/api/users/register/": {
+    /** @description Create a new user and return JWT tokens. */
     post: operations["users_register_create"];
   };
 }
@@ -76,14 +129,20 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
-     * @description * `weekly` - Weekly
+     * @description * `daily` - Daily
+     * * `weekly` - Weekly
      * * `monthly` - Monthly
+     * * `yearly` - Yearly
      * @enum {string}
      */
-    BudgetPreferenceEnum: "weekly" | "monthly";
-    ChildrenContributions: {
-      id: number;
-      user: number;
+    BudgetPreferenceEnum: "daily" | "weekly" | "monthly" | "yearly";
+    Category: {
+      category_id: number;
+      name: string;
+    };
+    ChildrenContribution: {
+      child_id: number;
+      user_id: number;
       child_name: string;
       parent_name: string;
       /** Format: decimal */
@@ -92,27 +151,32 @@ export interface components {
       monthly_contribution?: string | null;
       /** Format: date-time */
       created_at: string;
+      user_username: string;
     };
     Expense: {
-      id: number;
-      user: number;
-      description: string;
-      category: string;
-      /** Format: decimal */
-      amount: string;
       /** Format: date */
       expense_date: string;
+      user_id: number;
+      category_id: number;
+      /** Format: decimal */
+      amount: string;
       /** Format: date-time */
       created_at: string;
+      user_username: string;
+      category_name: string;
     };
     Milestone: {
       milestone_id: number;
       title: string;
       description?: string | null;
     };
-    PatchedChildrenContributions: {
-      id?: number;
-      user?: number;
+    PatchedCategory: {
+      category_id?: number;
+      name?: string;
+    };
+    PatchedChildrenContribution: {
+      child_id?: number;
+      user_id?: number;
       child_name?: string;
       parent_name?: string;
       /** Format: decimal */
@@ -121,28 +185,35 @@ export interface components {
       monthly_contribution?: string | null;
       /** Format: date-time */
       created_at?: string;
+      user_username?: string;
     };
     PatchedExpense: {
-      id?: number;
-      user?: number;
-      description?: string;
-      category?: string;
-      /** Format: decimal */
-      amount?: string;
       /** Format: date */
       expense_date?: string;
+      user_id?: number;
+      category_id?: number;
+      /** Format: decimal */
+      amount?: string;
       /** Format: date-time */
       created_at?: string;
+      user_username?: string;
+      category_name?: string;
+    };
+    PatchedMilestone: {
+      milestone_id?: number;
+      title?: string;
+      description?: string | null;
     };
     PatchedUser: {
       user_id?: number;
       username?: string;
       /** Format: email */
       email?: string;
+      password?: string;
       /** Format: decimal */
       salary?: string | null;
       /** Format: decimal */
-      total_balance?: string;
+      total_balance?: string | null;
       budget_preference?: components["schemas"]["BudgetPreferenceEnum"];
       email_notification?: boolean;
       /** Format: date-time */
@@ -150,21 +221,21 @@ export interface components {
       /** Format: date-time */
       updated_at?: string;
     };
-    PatchedUserMilestones: {
-      id?: number;
-      user?: number;
-      milestone?: number;
-      milestone_details?: components["schemas"]["Milestone"];
+    PatchedUserMilestone: {
+      umid?: number;
+      user_id?: number;
+      milestone_id?: number;
       is_completed?: boolean;
       /** Format: date-time */
       completed_at?: string | null;
+      user_username?: string;
+      milestone_title?: string;
+      milestone_details?: components["schemas"]["Milestone"];
     };
-    PatchedUserResponses: {
+    PatchedUserResponse: {
       response_id?: number;
-      user?: number;
+      user_id?: number;
       salary_confirmed?: boolean;
-      /** Format: decimal */
-      salary?: string | null;
       emergency_savings?: boolean;
       /** Format: decimal */
       emergency_savings_amount?: string | null;
@@ -182,16 +253,18 @@ export interface components {
       mortgage_remaining?: string | null;
       /** Format: date-time */
       submitted_at?: string;
+      user_username?: string;
     };
     User: {
       user_id: number;
       username: string;
       /** Format: email */
       email: string;
+      password: string;
       /** Format: decimal */
       salary?: string | null;
       /** Format: decimal */
-      total_balance?: string;
+      total_balance?: string | null;
       budget_preference?: components["schemas"]["BudgetPreferenceEnum"];
       email_notification?: boolean;
       /** Format: date-time */
@@ -199,21 +272,21 @@ export interface components {
       /** Format: date-time */
       updated_at: string;
     };
-    UserMilestones: {
-      id: number;
-      user: number;
-      milestone: number;
-      milestone_details: components["schemas"]["Milestone"];
+    UserMilestone: {
+      umid: number;
+      user_id: number;
+      milestone_id: number;
       is_completed?: boolean;
       /** Format: date-time */
-      completed_at: string | null;
+      completed_at?: string | null;
+      user_username: string;
+      milestone_title: string;
+      milestone_details: components["schemas"]["Milestone"];
     };
-    UserResponses: {
+    UserResponse: {
       response_id: number;
-      user: number;
+      user_id: number;
       salary_confirmed?: boolean;
-      /** Format: decimal */
-      salary?: string | null;
       emergency_savings?: boolean;
       /** Format: decimal */
       emergency_savings_amount?: string | null;
@@ -231,6 +304,7 @@ export interface components {
       mortgage_remaining?: string | null;
       /** Format: date-time */
       submitted_at: string;
+      user_username: string;
     };
   };
   responses: never;
@@ -246,33 +320,147 @@ export type external = Record<string, never>;
 
 export interface operations {
 
-  children_contributions_list: {
+  categories_list: {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["ChildrenContributions"][];
+          "application/json": components["schemas"]["Category"][];
         };
       };
     };
   };
-  children_contributions_create: {
+  categories_create: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ChildrenContributions"];
-        "application/x-www-form-urlencoded": components["schemas"]["ChildrenContributions"];
-        "multipart/form-data": components["schemas"]["ChildrenContributions"];
+        "application/json": components["schemas"]["Category"];
+        "application/x-www-form-urlencoded": components["schemas"]["Category"];
+        "multipart/form-data": components["schemas"]["Category"];
       };
     };
     responses: {
       201: {
         content: {
-          "application/json": components["schemas"]["ChildrenContributions"];
+          "application/json": components["schemas"]["Category"];
+        };
+      };
+    };
+  };
+  categories_retrieve: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this category. */
+        category_id: number;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Category"];
+        };
+      };
+    };
+  };
+  categories_update: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this category. */
+        category_id: number;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Category"];
+        "application/x-www-form-urlencoded": components["schemas"]["Category"];
+        "multipart/form-data": components["schemas"]["Category"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Category"];
+        };
+      };
+    };
+  };
+  categories_destroy: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this category. */
+        category_id: number;
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        content: never;
+      };
+    };
+  };
+  categories_partial_update: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this category. */
+        category_id: number;
+      };
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedCategory"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedCategory"];
+        "multipart/form-data": components["schemas"]["PatchedCategory"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Category"];
+        };
+      };
+    };
+  };
+  children_contributions_list: {
+    parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["ChildrenContribution"][];
+        };
+      };
+    };
+  };
+  children_contributions_create: {
+    parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChildrenContribution"];
+        "application/x-www-form-urlencoded": components["schemas"]["ChildrenContribution"];
+        "multipart/form-data": components["schemas"]["ChildrenContribution"];
+      };
+    };
+    responses: {
+      201: {
+        content: {
+          "application/json": components["schemas"]["ChildrenContribution"];
         };
       };
     };
   };
   children_contributions_retrieve: {
     parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
       path: {
         id: string;
       };
@@ -280,34 +468,42 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["ChildrenContributions"];
+          "application/json": components["schemas"]["ChildrenContribution"];
         };
       };
     };
   };
   children_contributions_update: {
     parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
       path: {
         id: string;
       };
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ChildrenContributions"];
-        "application/x-www-form-urlencoded": components["schemas"]["ChildrenContributions"];
-        "multipart/form-data": components["schemas"]["ChildrenContributions"];
+        "application/json": components["schemas"]["ChildrenContribution"];
+        "application/x-www-form-urlencoded": components["schemas"]["ChildrenContribution"];
+        "multipart/form-data": components["schemas"]["ChildrenContribution"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["ChildrenContributions"];
+          "application/json": components["schemas"]["ChildrenContribution"];
         };
       };
     };
   };
   children_contributions_destroy: {
     parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
       path: {
         id: string;
       };
@@ -321,21 +517,25 @@ export interface operations {
   };
   children_contributions_partial_update: {
     parameters: {
+      query?: {
+        /** @description Filter children by user */
+        user_id?: number;
+      };
       path: {
         id: string;
       };
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["PatchedChildrenContributions"];
-        "application/x-www-form-urlencoded": components["schemas"]["PatchedChildrenContributions"];
-        "multipart/form-data": components["schemas"]["PatchedChildrenContributions"];
+        "application/json": components["schemas"]["PatchedChildrenContribution"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedChildrenContribution"];
+        "multipart/form-data": components["schemas"]["PatchedChildrenContribution"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["ChildrenContributions"];
+          "application/json": components["schemas"]["ChildrenContribution"];
         };
       };
     };
@@ -368,7 +568,8 @@ export interface operations {
   expenses_retrieve: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique value identifying this expense. */
+        expense_date: string;
       };
     };
     responses: {
@@ -382,7 +583,8 @@ export interface operations {
   expenses_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique value identifying this expense. */
+        expense_date: string;
       };
     };
     requestBody: {
@@ -403,7 +605,8 @@ export interface operations {
   expenses_destroy: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique value identifying this expense. */
+        expense_date: string;
       };
     };
     responses: {
@@ -416,7 +619,8 @@ export interface operations {
   expenses_partial_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique value identifying this expense. */
+        expense_date: string;
       };
     };
     requestBody?: {
@@ -443,6 +647,22 @@ export interface operations {
       };
     };
   };
+  milestones_create: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Milestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["Milestone"];
+        "multipart/form-data": components["schemas"]["Milestone"];
+      };
+    };
+    responses: {
+      201: {
+        content: {
+          "application/json": components["schemas"]["Milestone"];
+        };
+      };
+    };
+  };
   milestones_retrieve: {
     parameters: {
       path: {
@@ -458,11 +678,69 @@ export interface operations {
       };
     };
   };
+  milestones_update: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this milestone. */
+        milestone_id: number;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Milestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["Milestone"];
+        "multipart/form-data": components["schemas"]["Milestone"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Milestone"];
+        };
+      };
+    };
+  };
+  milestones_destroy: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this milestone. */
+        milestone_id: number;
+      };
+    };
+    responses: {
+      /** @description No response body */
+      204: {
+        content: never;
+      };
+    };
+  };
+  milestones_partial_update: {
+    parameters: {
+      path: {
+        /** @description A unique integer value identifying this milestone. */
+        milestone_id: number;
+      };
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PatchedMilestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedMilestone"];
+        "multipart/form-data": components["schemas"]["PatchedMilestone"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["Milestone"];
+        };
+      };
+    };
+  };
   user_milestones_list: {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserMilestones"][];
+          "application/json": components["schemas"]["UserMilestone"][];
         };
       };
     };
@@ -470,15 +748,15 @@ export interface operations {
   user_milestones_create: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UserMilestones"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserMilestones"];
-        "multipart/form-data": components["schemas"]["UserMilestones"];
+        "application/json": components["schemas"]["UserMilestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["UserMilestone"];
+        "multipart/form-data": components["schemas"]["UserMilestone"];
       };
     };
     responses: {
       201: {
         content: {
-          "application/json": components["schemas"]["UserMilestones"];
+          "application/json": components["schemas"]["UserMilestone"];
         };
       };
     };
@@ -486,13 +764,14 @@ export interface operations {
   user_milestones_retrieve: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user milestone. */
+        umid: number;
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserMilestones"];
+          "application/json": components["schemas"]["UserMilestone"];
         };
       };
     };
@@ -500,20 +779,21 @@ export interface operations {
   user_milestones_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user milestone. */
+        umid: number;
       };
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UserMilestones"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserMilestones"];
-        "multipart/form-data": components["schemas"]["UserMilestones"];
+        "application/json": components["schemas"]["UserMilestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["UserMilestone"];
+        "multipart/form-data": components["schemas"]["UserMilestone"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserMilestones"];
+          "application/json": components["schemas"]["UserMilestone"];
         };
       };
     };
@@ -521,7 +801,8 @@ export interface operations {
   user_milestones_destroy: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user milestone. */
+        umid: number;
       };
     };
     responses: {
@@ -534,20 +815,21 @@ export interface operations {
   user_milestones_partial_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user milestone. */
+        umid: number;
       };
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["PatchedUserMilestones"];
-        "application/x-www-form-urlencoded": components["schemas"]["PatchedUserMilestones"];
-        "multipart/form-data": components["schemas"]["PatchedUserMilestones"];
+        "application/json": components["schemas"]["PatchedUserMilestone"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedUserMilestone"];
+        "multipart/form-data": components["schemas"]["PatchedUserMilestone"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserMilestones"];
+          "application/json": components["schemas"]["UserMilestone"];
         };
       };
     };
@@ -556,7 +838,7 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserResponses"][];
+          "application/json": components["schemas"]["UserResponse"][];
         };
       };
     };
@@ -564,15 +846,15 @@ export interface operations {
   user_responses_create: {
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UserResponses"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserResponses"];
-        "multipart/form-data": components["schemas"]["UserResponses"];
+        "application/json": components["schemas"]["UserResponse"];
+        "application/x-www-form-urlencoded": components["schemas"]["UserResponse"];
+        "multipart/form-data": components["schemas"]["UserResponse"];
       };
     };
     responses: {
       201: {
         content: {
-          "application/json": components["schemas"]["UserResponses"];
+          "application/json": components["schemas"]["UserResponse"];
         };
       };
     };
@@ -580,13 +862,14 @@ export interface operations {
   user_responses_retrieve: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user response. */
+        response_id: number;
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserResponses"];
+          "application/json": components["schemas"]["UserResponse"];
         };
       };
     };
@@ -594,20 +877,21 @@ export interface operations {
   user_responses_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user response. */
+        response_id: number;
       };
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UserResponses"];
-        "application/x-www-form-urlencoded": components["schemas"]["UserResponses"];
-        "multipart/form-data": components["schemas"]["UserResponses"];
+        "application/json": components["schemas"]["UserResponse"];
+        "application/x-www-form-urlencoded": components["schemas"]["UserResponse"];
+        "multipart/form-data": components["schemas"]["UserResponse"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserResponses"];
+          "application/json": components["schemas"]["UserResponse"];
         };
       };
     };
@@ -615,7 +899,8 @@ export interface operations {
   user_responses_destroy: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user response. */
+        response_id: number;
       };
     };
     responses: {
@@ -628,24 +913,40 @@ export interface operations {
   user_responses_partial_update: {
     parameters: {
       path: {
-        id: string;
+        /** @description A unique integer value identifying this user response. */
+        response_id: number;
       };
     };
     requestBody?: {
       content: {
-        "application/json": components["schemas"]["PatchedUserResponses"];
-        "application/x-www-form-urlencoded": components["schemas"]["PatchedUserResponses"];
-        "multipart/form-data": components["schemas"]["PatchedUserResponses"];
+        "application/json": components["schemas"]["PatchedUserResponse"];
+        "application/x-www-form-urlencoded": components["schemas"]["PatchedUserResponse"];
+        "multipart/form-data": components["schemas"]["PatchedUserResponse"];
       };
     };
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["UserResponses"];
+          "application/json": components["schemas"]["UserResponse"];
         };
       };
     };
   };
+  user_responses_milestones_status_retrieve: {
+    responses: {
+      200: {
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+    };
+  };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_list: {
     responses: {
       200: {
@@ -655,6 +956,12 @@ export interface operations {
       };
     };
   };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_create: {
     requestBody: {
       content: {
@@ -671,6 +978,12 @@ export interface operations {
       };
     };
   };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_retrieve: {
     parameters: {
       path: {
@@ -686,6 +999,12 @@ export interface operations {
       };
     };
   };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_update: {
     parameters: {
       path: {
@@ -708,6 +1027,12 @@ export interface operations {
       };
     };
   };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_destroy: {
     parameters: {
       path: {
@@ -722,6 +1047,12 @@ export interface operations {
       };
     };
   };
+  /**
+   * @description Handles:
+   * - /api/users/register/
+   * - /api/users/login/
+   * - /api/users/<id>/ (GET / PATCH)
+   */
   users_partial_update: {
     parameters: {
       path: {
@@ -744,16 +1075,8 @@ export interface operations {
       };
     };
   };
-  users_profile_retrieve: {
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["User"];
-        };
-      };
-    };
-  };
-  users_profile_update: {
+  /** @description Authenticate user with JWT tokens. */
+  users_login_create: {
     requestBody: {
       content: {
         "application/json": components["schemas"]["User"];
@@ -769,22 +1092,7 @@ export interface operations {
       };
     };
   };
-  users_profile_partial_update: {
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["PatchedUser"];
-        "application/x-www-form-urlencoded": components["schemas"]["PatchedUser"];
-        "multipart/form-data": components["schemas"]["PatchedUser"];
-      };
-    };
-    responses: {
-      200: {
-        content: {
-          "application/json": components["schemas"]["User"];
-        };
-      };
-    };
-  };
+  /** @description Create a new user and return JWT tokens. */
   users_register_create: {
     requestBody: {
       content: {

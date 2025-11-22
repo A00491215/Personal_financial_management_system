@@ -1,0 +1,103 @@
+import React, { useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useAuthContext } from "../../contexts/AuthContext";
+import { useProfileContext } from "../../contexts/ProfileContext";
+import "./Auth.scss";
+
+const LoginPage: React.FC = () => {
+  const { login, loading } = useAuthContext();
+  const { fetchProfile } = useProfileContext();
+  const navigate = useNavigate();
+  const location = useLocation() as any;
+  const from = location.state?.from?.pathname || "/dashboard";
+
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      // 🔹 Perform login via AuthContext
+      const loggedInUser = await login(form);
+
+      // loggedInUser MUST return user_id
+      const userId = Number(localStorage.getItem("user_id"));
+
+      if (userId) {
+        // 🔥 Auto-fetch profile as soon as user logs in
+        await fetchProfile(userId);
+      }
+
+      // Redirect
+      navigate(from, { replace: true });
+
+    } catch (err: any) {
+      setError(err?.message || "Invalid credentials");
+    }
+  };
+
+  return (
+    <div className="auth-wrapper">
+      <div className="card shadow-sm">
+        <div className="card-body p-4">
+          <h1 className="h4 mb-3 text-center">Welcome back</h1>
+          <p className="text-muted text-center mb-4">
+            Sign in to manage your personal finances.
+          </p>
+
+          {error && (
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="mb-3">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                name="email"
+                className="form-control"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                className="form-control"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary w-100"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          <p className="text-center mt-3 mb-0">
+            Don&apos;t have an account? <Link to="/register">Create one</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
