@@ -45,6 +45,7 @@ export interface ChildrenContribution {
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
+  has_total_contribution?: boolean;
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at: string;
@@ -96,6 +97,7 @@ export interface PatchedChildrenContribution {
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
+  has_total_contribution?: boolean;
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at?: string;
@@ -188,6 +190,12 @@ export interface PatchedUserResponse {
    * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
    */
   debt_amount?: string | null;
+  full_emergency_fund?: boolean;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   */
+  full_emergency_fund_amount?: string | null;
   retirement_investing?: boolean;
   /**
    * @format decimal
@@ -275,6 +283,12 @@ export interface UserResponse {
    * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
    */
   debt_amount?: string | null;
+  full_emergency_fund?: boolean;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
+   */
+  full_emergency_fund_amount?: string | null;
   retirement_investing?: boolean;
   /**
    * @format decimal

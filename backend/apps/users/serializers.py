@@ -135,7 +135,7 @@ class ChildrenContributionSerializer(serializers.ModelSerializer):
         model = ChildrenContribution
         fields = [
             'child_id', 'user_id', 'child_name', 'parent_name',
-            'total_contribution_planned', 'monthly_contribution',
+            'total_contribution_planned', 'has_total_contribution', 'monthly_contribution',
             'created_at', 'user_username'
         ]
         read_only_fields = ["child_id", "created_at", "user_username"]
@@ -173,7 +173,8 @@ class UserResponseSerializer(serializers.ModelSerializer):
         model = UserResponse
         fields = [
             'response_id', 'user_id', 'salary_confirmed', 'emergency_savings',
-            'emergency_savings_amount', 'has_debt', 'debt_amount',
+            'emergency_savings_amount','has_debt', 'debt_amount',
+            'full_emergency_fund', 'full_emergency_fund_amount',
             'retirement_investing', 'retirement_savings_amount',
             'has_children', 'children_count', 'bought_home',
             'pay_off_home', 'mortgage_remaining', 'submitted_at',

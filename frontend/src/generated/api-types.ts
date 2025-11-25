@@ -148,6 +148,7 @@ export interface components {
       /** Format: decimal */
       total_contribution_planned?: string | null;
       /** Format: decimal */
+      has_total_contribution: boolean;
       monthly_contribution?: string | null;
       /** Format: date-time */
       created_at: string;
@@ -182,6 +183,7 @@ export interface components {
       /** Format: decimal */
       total_contribution_planned?: string | null;
       /** Format: decimal */
+      has_total_contribution?: boolean;
       monthly_contribution?: string | null;
       /** Format: date-time */
       created_at?: string;
@@ -242,6 +244,9 @@ export interface components {
       has_debt?: boolean;
       /** Format: decimal */
       debt_amount?: string | null;
+      full_emergency_fund?: boolean;
+      /** Format: decimal */
+      full_emergency_fund_amount?: string | null;
       retirement_investing?: boolean;
       /** Format: decimal */
       retirement_savings_amount?: string | null;
@@ -293,6 +298,9 @@ export interface components {
       has_debt?: boolean;
       /** Format: decimal */
       debt_amount?: string | null;
+      full_emergency_fund?: boolean;
+      /** Format: decimal */
+      full_emergency_fund_amount?: string | null;
       retirement_investing?: boolean;
       /** Format: decimal */
       retirement_savings_amount?: string | null;

@@ -56,7 +56,7 @@ class ExpenseAdmin(admin.ModelAdmin):
 class ChildrenContributionAdmin(admin.ModelAdmin):
     list_display = [
         'child_id', 'user_id', 'child_name', 'parent_name',
-        'total_contribution_planned', 'monthly_contribution', 'created_at'
+        'total_contribution_planned', 'has_total_contribution', 'monthly_contribution', 'created_at'
     ]
     list_filter = ['created_at']
     search_fields = ['child_name', 'parent_name', 'user_id__username']
@@ -66,7 +66,7 @@ class ChildrenContributionAdmin(admin.ModelAdmin):
     fieldsets = (
         ('User Information', {'fields': ('user_id',)}),
         ('Child Information', {'fields': ('child_name', 'parent_name')}),
-        ('Contribution Details', {'fields': ('total_contribution_planned', 'monthly_contribution')}),
+        ('Contribution Details', {'fields': ('total_contribution_planned', 'has_total_contribution', 'monthly_contribution')}),
         ('Metadata', {'fields': ('created_at',)}),
     )
 
@@ -101,7 +101,7 @@ class UserResponseAdmin(admin.ModelAdmin):
         'has_children', 'bought_home', 'submitted_at'
     ]
     list_filter = [
-        'salary_confirmed', 'emergency_savings', 'has_debt',
+        'salary_confirmed', 'emergency_savings', 'full_emergency_fund', 'has_debt',
         'retirement_investing', 'has_children', 'bought_home',
         'pay_off_home', 'submitted_at'
     ]
@@ -121,6 +121,11 @@ class UserResponseAdmin(admin.ModelAdmin):
         }),
         ('Debt Information', {
             'fields': ('has_debt', 'debt_amount')
+        }),
+        ('Emergency Savings', {
+            'fields': (
+                'full_emergency_fund', 'full_emergency_fund_amount'
+            )
         }),
         ('Retirement', {
             'fields': (

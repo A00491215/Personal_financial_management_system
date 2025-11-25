@@ -1,5 +1,16 @@
 .milestones-page {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+
   .milestone-card {
+    display: flex;
+    align-items: center;
     margin-bottom: 1rem;
+
+    .status-icon {
+      font-size: 1.8rem;
+      margin-right: 10px;
+    }
   }
 }

@@ -108,3 +108,28 @@
 .save-btn:hover {
   background: #1d4ed8;
 }
+
+.readonly-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.readonly-info input[disabled] {
+  background: #f1f5f9;
+  color: #333;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.required-star {
+  color: #dc2626; /* red-600 */
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 4px;
+}
