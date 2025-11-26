@@ -4,17 +4,24 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useProfileContext } from "../../contexts/ProfileContext";
 import { financeService } from "../../services/finance.service";
 import { childrenService } from "../../services/children.service";
+import { useNavigate } from "react-router-dom";
 import "./MilestonesPage.scss";
 
 const MilestonesPage: React.FC = () => {
   const { user } = useAuthContext();
   const { profile } = useProfileContext();
+  const navigate = useNavigate();
   const userId = user?.user_id ?? Number(localStorage.getItem("user_id"));
 
   const [response, setResponse] = useState<any>(null);
   const [children, setChildren] = useState<any[]>([]);
   const [status, setStatus] = useState<boolean[]>([]);
+  const completed = status.filter(Boolean).length;
+  const percentage = Math.round((completed / 6) * 100);
 
+  // -------------------------------------------------------
+  // Fetch finance + children
+  // -------------------------------------------------------
   useEffect(() => {
     if (!userId) return;
 
@@ -29,6 +36,9 @@ const MilestonesPage: React.FC = () => {
     fetchData();
   }, [userId]);
 
+  // -------------------------------------------------------
+  // Evaluate milestones
+  // -------------------------------------------------------
   useEffect(() => {
     if (!response) return;
 
@@ -46,53 +56,31 @@ const MilestonesPage: React.FC = () => {
     evaluate();
   }, [response, children]);
 
-  // ---------------------------
-  //      STEP 1 LOGIC
-  // ---------------------------
+  // ---------------- STEP LOGIC ----------------
   const step1 = () => {
     if (!response.emergency_savings) return false;
-
-    const amt = Number(response.emergency_savings_amount);
-    if (amt === 1000) return true;
-    return false;
+    return Number(response.emergency_savings_amount) === 1000;
   };
 
-  // ---------------------------
-  //      STEP 2 LOGIC
-  // ---------------------------
   const step2 = () => {
     if (!response.has_debt) return true;
-
-    const debt = Number(response.debt_amount);
-    return debt === 0;
+    return Number(response.debt_amount) === 0;
   };
 
-  // ---------------------------
-  //      STEP 3 LOGIC
-  // ---------------------------
   const step3 = () => {
     if (!response.full_emergency_fund) return false;
-
     const required = Number(profile?.salary) / 2;
     return Number(response.full_emergency_fund_amount) === required;
   };
 
-  // ---------------------------
-  //      STEP 4 LOGIC
-  // ---------------------------
   const step4 = () => {
     if (!response.retirement_investing) return false;
-
     const required = (Number(profile?.salary) * 0.15) / 12;
     return Number(response.retirement_savings_amount) === required;
   };
 
-  // ---------------------------
-  //      STEP 5 LOGIC
-  // ---------------------------
   const step5 = () => {
     if (!response.has_children) return true;
-
     if (response.children_count <= 0) return false;
 
     return children
@@ -100,15 +88,16 @@ const MilestonesPage: React.FC = () => {
       .every((c: any) => Number(c.total_contribution_planned) > 0);
   };
 
-  // ---------------------------
-  //      STEP 6 LOGIC
-  // ---------------------------
   const step6 = () => {
-    if (!response.bought_home) return false;
+    if (!response.bought_home) return false; // Do not own home → Fail
 
-    if (!response.pay_off_home) return false;
+    if (response.bought_home && response.pay_off_home) return true; // Own + paying → Pass
 
-    return Number(response.mortgage_remaining) === 0;
+    if (response.bought_home && !response.pay_off_home) {
+      return Number(response.mortgage_remaining) === 0;
+    }
+
+    return false;
   };
 
   const milestones = [
@@ -120,23 +109,74 @@ const MilestonesPage: React.FC = () => {
     { title: "Step-6 Pay Off Home: Eliminate your mortgage early" }
   ];
 
-  const allDone = status.length === 6 && status.every(Boolean);
+  const allDone = completed === 6;
 
   return (
     <div className="milestones-page">
       <div className="card shadow-sm p-4">
-        <h2 className="h4 mb-4">Dave Ramsey’s Seven Baby Steps</h2>
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2 className="h4 mb-0">Dave Ramsey’s Seven Baby Steps</h2>
 
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => navigate("/finance")}
+          >
+            Edit Responses
+          </button>
+        </div>
+
+        {/* ---------------- PROGRESS BAR ---------------- */}
+        <div className="mb-4">
+          <div className="d-flex justify-content-between mb-1">
+            <strong>{percentage}% Completed</strong>
+            <span>{completed} of 6 steps completed</span>
+          </div>
+
+          <div className="progress" style={{ height: "12px" }}>
+            <div
+              className="progress-bar bg-success"
+              role="progressbar"
+              style={{
+                width: `${percentage}%`,
+                transition: "width 0.8s ease"
+              }}
+            ></div>
+          </div>
+        </div>
+
+        {/* ---------------- STEP LIST ---------------- */}
         {milestones.map((m, i) => (
           <div className="milestone-card" key={i}>
-            <span className="status-icon">{status[i] ? "✔️" : "❌"}</span>
+            <span className="status-icon">
+              {status[i] ? (
+                <i className="bi bi-check-circle-fill text-success"></i>
+              ) : (
+                <i className="bi bi-x-circle-fill text-danger"></i>
+              )}
+            </span>
             <p className="fw-semibold mb-1">{m.title}</p>
           </div>
         ))}
 
+        {/* -------- WHEN ALL STEPS COMPLETED -------- */}
         {allDone && (
-          <div className="mt-4 text-success fw-bold">
-            🎉 Congratulations, you have completed all milestones!
+          <div className="mt-4 p-3 rounded bg-light border text-success fw-semibold">
+            🎉 Congratulations, you have completed all milestones!  
+            <br />
+            📩 An email has been sent to <strong>{profile?.email}</strong> with encouragement to begin the final Baby Step.
+            <hr />
+            <strong>Next Step (Step-7): Build Wealth & Give</strong>  
+            <br />
+            <span className="text-dark">
+              Achieve financial freedom, grow your wealth, and give generously to others.
+            </span>
+          </div>
+        )}
+
+        {/* -------- WHEN NOT COMPLETED -------- */}
+        {!allDone && (
+          <div className="mt-4 p-3 rounded bg-light border text-primary fw-semibold">
+            💡 You’re doing great! Keep going and complete all milestones to reach financial freedom.
           </div>
         )}
       </div>

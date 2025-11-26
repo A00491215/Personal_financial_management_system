@@ -1,6 +1,7 @@
 // src/pages/finance/FinanceFormPage.tsx
 import React, { useEffect, useState } from "react";
 import Navbar from "../../components/common/Navbar/Navbar";
+import {useNavigate } from "react-router-dom";
 
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useProfileContext } from "../../contexts/ProfileContext";
@@ -57,6 +58,7 @@ interface FinanceErrors {
  * MAIN COMPONENT
  * ---------------------------------------------- */
 const FinanceFormPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const { profile } = useProfileContext();
   const { response, loadFinance, saveFinance } = useFinanceContext();
@@ -181,7 +183,43 @@ const FinanceFormPage: React.FC = () => {
     field: K,
     value: boolean
   ) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // Reset numeric fields when switching to NO
+      if (field === "emergency_savings" && value === false) {
+        updated.emergency_savings_amount = "0";
+      }
+
+      if (field === "full_emergency_fund" && value === false) {
+        updated.full_emergency_fund_amount = "0";
+      }
+
+      if (field === "has_debt" && value === false) {
+        updated.debt_amount = "0";
+      }
+
+      if (field === "retirement_investing" && value === false) {
+        updated.retirement_savings_amount = "0";
+      }
+
+      if (field === "has_children" && value === false) {
+        updated.children_count = 0;
+        setChildren([]); // reset children array too
+      }
+
+      if (field === "bought_home" && value === false) {
+        updated.pay_off_home = false;
+        updated.mortgage_remaining = "0";
+      }
+
+      if (field === "pay_off_home" && value === false) {
+        updated.mortgage_remaining = "0";
+      }
+
+      return updated;
+    });
+
 
     // Clear related errors when user interacts
     if (field === "emergency_savings") {
@@ -291,13 +329,16 @@ const FinanceFormPage: React.FC = () => {
     });
   }
 
-  if (form.bought_home && form.pay_off_home) {
+  if (form.bought_home && !form.pay_off_home) {
     if (!form.mortgage_remaining.trim()) {
       newErrors.mortgage_remaining = "Please enter remaining mortgage amount.";
     } else {
       const val = Number(form.mortgage_remaining);
       if (isNaN(val) || val < 0) {
         newErrors.mortgage_remaining = "Mortgage amount cannot be negative.";
+      }
+      else if (val === 0) {
+        newErrors.mortgage_remaining = "Mortgage amount must be greater than 0.";
       }
     }
   }
@@ -359,8 +400,9 @@ const FinanceFormPage: React.FC = () => {
       }
     }
 
+    localStorage.setItem("completed_baby_steps", "true");
     alert("Progress saved successfully!");
-    window.location.href = "/milestones";
+    navigate("/milestones");
   };
 
   return (
@@ -862,7 +904,7 @@ const FinanceFormPage: React.FC = () => {
                       <input
                         className="form-control"
                         type="number"
-                        min={0}
+                        min={1}
                         placeholder="Enter the remaining mortgage"
                         value={form.mortgage_remaining}
                         onChange={(e) =>
