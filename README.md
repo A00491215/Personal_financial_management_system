@@ -32,7 +32,8 @@ Steps:
 1. Install Docker Desktop
 2. clone the repository from soundarya branch
 3. give "npm install" inside frontend folder
-4. Come back to the main folder and give "docker-compose up --build" - run twice, use control+c to stop.
+4. Give "npm install bootstrap-icons" inside frontend folder
+5. Come back to the main folder and give "docker-compose up --build" - run twice, use control+c to stop.
 
 Information:
 1. backend/apps/users/migrations/0001_initial.py - has the migration scripts
