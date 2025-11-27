@@ -5,7 +5,7 @@ import React, {
   PropsWithChildren,
   useCallback,
   useMemo,
-  useEffect,   // <-- add
+  useEffect,
 } from "react";
 
 import { profileService } from "../services/profile.service";
@@ -16,6 +16,7 @@ interface ProfileContextValue {
   loading: boolean;
   fetchProfile: (userId: number) => Promise<void>;
   updateProfile: (userId: number, data: Partial<PatchedUser>) => Promise<void>;
+  resetProfile: () => void;
 }
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(undefined);
@@ -47,6 +48,11 @@ export const ProfileProvider: React.FC<PropsWithChildren> = ({ children }) => {
     []
   );
 
+  const resetProfile = useCallback(() => {
+    setProfile(null);
+  }, []);
+
+
   /** 🔥 AUTO-LOAD PROFILE AFTER REFRESH */
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
@@ -56,8 +62,8 @@ export const ProfileProvider: React.FC<PropsWithChildren> = ({ children }) => {
   }, []);
 
   const value = useMemo(
-    () => ({ profile, loading, fetchProfile, updateProfile }),
-    [profile, loading, fetchProfile, updateProfile]
+    () => ({ profile, loading, fetchProfile, updateProfile, resetProfile }),
+    [profile, loading, fetchProfile, updateProfile, resetProfile]
   );
 
   return (

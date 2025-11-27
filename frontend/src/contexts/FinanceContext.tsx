@@ -14,6 +14,7 @@ interface FinanceContextValue {
   loading: boolean;
   loadFinance: (userId: number) => Promise<void>;
   saveFinance: (userId: number, updates: Partial<UserResponse>) => Promise<void>;
+  resetFinance: () => void;
 }
 
 const FinanceContext = createContext<FinanceContextValue | undefined>(undefined);
@@ -33,7 +34,7 @@ export const FinanceProvider: React.FC<PropsWithChildren> = ({ children }) => {
     }
   }, []);
 
-  // 🔥 Stable finance updater
+  // Stable finance updater
   const saveFinance = useCallback(
     async (userId: number, updates: Partial<UserResponse>) => {
       setLoading(true);
@@ -53,9 +54,13 @@ export const FinanceProvider: React.FC<PropsWithChildren> = ({ children }) => {
     [response]
   );
 
+  const resetFinance = useCallback(() => {
+    setResponse(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ response, loading, loadFinance, saveFinance }),
-    [response, loading, loadFinance, saveFinance]
+    () => ({ response, loading, loadFinance, saveFinance, resetFinance }),
+    [response, loading, loadFinance, saveFinance, resetFinance]
   );
 
   return (

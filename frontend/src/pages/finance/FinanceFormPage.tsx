@@ -402,7 +402,7 @@ const FinanceFormPage: React.FC = () => {
 
     localStorage.setItem("completed_baby_steps", "true");
     alert("Progress saved successfully!");
-    navigate("/milestones");
+    navigate("/milestones", { state: { fromFinance: true } });
   };
 
   return (

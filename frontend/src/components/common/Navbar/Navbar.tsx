@@ -15,11 +15,11 @@ const Navbar: React.FC = () => {
   if (!user) return null;
   if (profileLoading || !profile) return null;
 
-  // 👇 Read baby steps completion flag
   const completed = localStorage.getItem("completed_baby_steps") === "true";
 
   const handleLogout = () => {
     logout();
+    localStorage.clear();
     navigate("/login");
   };
 
@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
     <nav className="pfm-navbar">
       <div className="navbar-left">
 
-        <Link to="/dashboard" className="brand">PFM</Link>
+        <Link to="/dashboard" className="brand">Personal Finance Management</Link>
 
         <Link to="/dashboard" className={navClass("/dashboard", currentPath)}>
           Dashboard
@@ -40,14 +40,12 @@ const Navbar: React.FC = () => {
           Daily Expenses
         </Link>
 
-        {/* 👇 SHOW Seven Baby Steps finance page ONLY if NOT completed */}
         {!completed && (
           <Link to="/finance" className={navClass("/finance", currentPath)}>
             Seven Baby Steps
           </Link>
         )}
 
-        {/* 👇 SHOW Milestones ONLY after completing baby steps */}
         {completed && (
           <Link to="/milestones" className={navClass("/milestones", currentPath)}>
             Milestones

@@ -4,7 +4,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useProfileContext } from "../../contexts/ProfileContext";
 import { financeService } from "../../services/finance.service";
 import { childrenService } from "../../services/children.service";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./MilestonesPage.scss";
 
 const MilestonesPage: React.FC = () => {
@@ -18,10 +18,11 @@ const MilestonesPage: React.FC = () => {
   const [status, setStatus] = useState<boolean[]>([]);
   const completed = status.filter(Boolean).length;
   const percentage = Math.round((completed / 6) * 100);
+  const location = useLocation();
+  const fromFinance = location.state?.fromFinance === true;
 
-  // -------------------------------------------------------
+
   // Fetch finance + children
-  // -------------------------------------------------------
   useEffect(() => {
     if (!userId) return;
 
@@ -36,9 +37,7 @@ const MilestonesPage: React.FC = () => {
     fetchData();
   }, [userId]);
 
-  // -------------------------------------------------------
   // Evaluate milestones
-  // -------------------------------------------------------
   useEffect(() => {
     if (!response) return;
 
@@ -89,9 +88,9 @@ const MilestonesPage: React.FC = () => {
   };
 
   const step6 = () => {
-    if (!response.bought_home) return false; // Do not own home → Fail
+    if (!response.bought_home) return false;
 
-    if (response.bought_home && response.pay_off_home) return true; // Own + paying → Pass
+    if (response.bought_home && response.pay_off_home) return true;
 
     if (response.bought_home && !response.pay_off_home) {
       return Number(response.mortgage_remaining) === 0;
@@ -162,10 +161,16 @@ const MilestonesPage: React.FC = () => {
         {allDone && (
           <div className="mt-4 p-3 rounded bg-light border text-success fw-semibold">
             🎉 Congratulations, you have completed all milestones!  
-            <br />
-            📩 An email has been sent to <strong>{profile?.email}</strong> with encouragement to begin the final Baby Step.
-            <hr />
-            <strong>Next Step (Step-7): Build Wealth & Give</strong>  
+            <br /><br/>
+
+            {fromFinance && (
+              <>
+                📩 An email has been sent to <strong>{profile?.email}</strong> with encouragement to begin the final Baby Step.
+                <hr />
+              </>
+            )}
+            
+            <strong>Next Step (Step-7): Build Wealth & Give</strong>
             <br />
             <span className="text-dark">
               Achieve financial freedom, grow your wealth, and give generously to others.

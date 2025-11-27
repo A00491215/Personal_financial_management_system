@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useProfileContext } from "../../contexts/ProfileContext";
 import { financeService } from "../../services/finance.service";
 import "./Auth.scss";
 
 const LoginPage: React.FC = () => {
-  const { login, loading } = useAuthContext();
+  const { login, loading, user } = useAuthContext();
   const { fetchProfile } = useProfileContext();
   const navigate = useNavigate();
-  const location = useLocation() as any;
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +26,7 @@ const LoginPage: React.FC = () => {
       await login(form);
 
       // GET USER ID
-      const userId = Number(localStorage.getItem("user_id"));
+      const userId = user?.user_id ?? Number(localStorage.getItem("user_id"));
       if (!userId) throw new Error("Invalid user ID");
 
       // FETCH PROFILE
@@ -35,10 +34,8 @@ const LoginPage: React.FC = () => {
 
       // CHECK IF USER ALREADY HAS FINANCE RESPONSE
       let hasUserResponse = false;
-      console.log("Checking finance response for user ID:", userId);
       try {
         const res = await financeService.getResponseForUser(userId);
-        console.log("Finance response:", res);
         if (res === null) hasUserResponse = false;
         else hasUserResponse = true;
       } catch (err) {
@@ -48,7 +45,6 @@ const LoginPage: React.FC = () => {
       // SAVE FLAG IN LOCAL STORAGE
       // firstLogin = true → navigate to baby steps
       // firstLogin = false → navigate to dashboard
-      console.log("Has user finance response:", hasUserResponse);
       if (hasUserResponse) {
         localStorage.setItem("completed_baby_steps", "true");
         navigate("/dashboard", { replace: true });

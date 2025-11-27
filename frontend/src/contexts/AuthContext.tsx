@@ -13,6 +13,8 @@ import {
   type LoginResult,
 } from "../services/auth.service";
 import type { User } from "../generated/api-client";
+import { useFinanceContext } from "./FinanceContext";
+import { useProfileContext } from "./ProfileContext";
 
 interface AuthContextValue {
   user: User | null;
@@ -29,6 +31,8 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { resetProfile } = useProfileContext();
+  const { resetFinance } = useFinanceContext();
 
   /* -----------------------------------------
    * LOGIN
@@ -65,11 +69,11 @@ export const AuthProvider: React.FC<PropsWithChildren> = ({ children }) => {
 
     setUser(null);
     setAccessToken(null);
+    resetProfile();
+    resetFinance();
 
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("user_id");
-  }, []);
+    localStorage.clear();
+  }, [resetFinance, resetProfile]);
 
   /* -----------------------------------------
    * INITIAL APP LOAD (on refresh)
