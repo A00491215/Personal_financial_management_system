@@ -32,7 +32,7 @@ Steps:
 1. Install Docker Desktop
 2. clone the repository from soundarya branch
 3. give "npm install" inside frontend folder
-4. Give "npm install bootstrap-icons" inside frontend folder
+4. Give "npm install bootstrap-icons", "npm install validator @types/validator" inside frontend folder
 5. Come back to the main folder and give "docker-compose up --build" - run twice, use control+c to stop.
 
 Information:

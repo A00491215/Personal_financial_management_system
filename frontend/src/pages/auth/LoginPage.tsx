@@ -75,7 +75,9 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="mb-3">
-              <label className="form-label">Email</label>
+              <label className="form-label">Email
+                <span className="required-star">*</span>
+              </label>
               <input
                 type="email"
                 name="email"
@@ -87,7 +89,9 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Password</label>
+              <label className="form-label">Password
+                <span className="required-star">*</span>
+              </label>
               <input
                 type="password"
                 name="password"
