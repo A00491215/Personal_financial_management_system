@@ -129,6 +129,14 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         else:
             next_month = start_of_month.replace(month=start_of_month.month + 1)
+            
+            # ---- recent expenses (last 5) ----
+        recent_expenses_qs = (
+            Expense.objects.filter(user_id=user)
+            .select_related("category_id")
+            .order_by("-expense_date")[:5]
+        )
+        recent_expenses = ExpenseSerializer(recent_expenses_qs, many=True).data
 
         # ---- sum this month's expenses ----
         monthly_expenses = (
@@ -153,6 +161,7 @@ class UserViewSet(viewsets.ModelViewSet):
             "monthly_income": str(monthly_income),
              "monthly_expenses": str(monthly_expenses),
              "savings_rate": round(savings_rate, 2),
+             "recent_expenses": recent_expenses,
         }
         return Response(data)
     
