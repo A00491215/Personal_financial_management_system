@@ -116,12 +116,37 @@ class UserViewSet(viewsets.ModelViewSet):
         # Use Decimal defaults in case fields are null
         total_balance = user.total_balance or Decimal("0")
         monthly_income = user.salary or Decimal("0")
+        
+        # ---- current month date range ----
+        today = timezone.now().date()
+        start_of_month = today.replace(day=1)
+
+        # simple "next month" calculation
+        if start_of_month.month == 12:
+            next_month = start_of_month.replace(
+                year=start_of_month.year + 1,
+                month=1
+            )
+        else:
+            next_month = start_of_month.replace(month=start_of_month.month + 1)
+
+        # ---- sum this month's expenses ----
+        monthly_expenses = (
+            Expense.objects.filter(
+                user_id=user,
+                expense_date__gte=start_of_month,
+                expense_date__lt=next_month,
+            ).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0")
+        )
 
         data = {
             "total_balance": str(total_balance),
             "monthly_income": str(monthly_income),
+             "monthly_expenses": str(monthly_expenses),
         }
         return Response(data)
+    
        
 # =====================================================================
 #                       CATEGORY VIEWSET
