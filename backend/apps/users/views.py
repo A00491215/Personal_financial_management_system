@@ -109,9 +109,19 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def dashboard(self, request):
         """
-        Temporary empty dashboard endpoint.
+        Return very basic dashboard numbers for the logged-in user.
         """
-        return Response({"message": "dashboard endpoint ready"})
+        user = request.user  # this is your custom User model instance
+
+        # Use Decimal defaults in case fields are null
+        total_balance = user.total_balance or Decimal("0")
+        monthly_income = user.salary or Decimal("0")
+
+        data = {
+            "total_balance": str(total_balance),
+            "monthly_income": str(monthly_income),
+        }
+        return Response(data)
        
 # =====================================================================
 #                       CATEGORY VIEWSET
