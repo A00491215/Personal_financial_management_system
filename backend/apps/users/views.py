@@ -155,6 +155,9 @@ class UserViewSet(viewsets.ModelViewSet):
             )
         else:
             savings_rate = 0.0
+            
+        # ---- milestone / baby steps status ----
+        milestone_status = evaluate_milestones(user.user_id)
 
         data = {
             "total_balance": str(total_balance),
@@ -162,6 +165,7 @@ class UserViewSet(viewsets.ModelViewSet):
              "monthly_expenses": str(monthly_expenses),
              "savings_rate": round(savings_rate, 2),
              "recent_expenses": recent_expenses,
+             "milestone_status": milestone_status,
         }
         return Response(data)
     
