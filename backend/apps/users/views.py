@@ -2,6 +2,9 @@
 
 from decimal import Decimal
 
+from datetime import date, timedelta
+
+
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import viewsets, status
@@ -11,6 +14,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from rest_framework.permissions import IsAuthenticated
 
 from .models import (
     User,
@@ -95,8 +100,19 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
-
+    # --------------------------- Dasshboard --------------------------
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="dashboard",
+        permission_classes=[IsAuthenticated],
+    )
+    def dashboard(self, request):
+        """
+        Temporary empty dashboard endpoint.
+        """
+        return Response({"message": "dashboard endpoint ready"})
+       
 # =====================================================================
 #                       CATEGORY VIEWSET
 # =====================================================================
