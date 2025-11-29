@@ -139,11 +139,20 @@ class UserViewSet(viewsets.ModelViewSet):
             ).aggregate(total=Sum("amount"))["total"]
             or Decimal("0")
         )
+        
+        # ---- savings rate (% of income not spent) ----
+        if monthly_income > 0:
+            savings_rate = float(
+                (monthly_income - monthly_expenses) / monthly_income * 100
+            )
+        else:
+            savings_rate = 0.0
 
         data = {
             "total_balance": str(total_balance),
             "monthly_income": str(monthly_income),
              "monthly_expenses": str(monthly_expenses),
+             "savings_rate": round(savings_rate, 2),
         }
         return Response(data)
     
