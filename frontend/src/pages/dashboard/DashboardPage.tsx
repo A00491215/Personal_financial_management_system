@@ -54,8 +54,50 @@ const DashboardPage: React.FC = () => {
   const monthlyExpenses = Number(data?.monthly_expenses ?? 0);
   const savingsRate = data?.savings_rate ?? 0;
 
-  // New: real recent expenses from backend
+  // Real recent expenses from backend
   const recentExpenses = data.recent_expenses ?? [];
+
+  // ---------------- Baby Steps / Milestones ----------------
+  const milestoneStatus = data.milestone_status;
+
+  type BabyStepView = { label: string; progress: number };
+
+  const babySteps: BabyStepView[] = [];
+
+  if (Array.isArray(milestoneStatus)) {
+    // If backend returns an array like [{ name, progress }, ...]
+    milestoneStatus.forEach((step: any, index: number) => {
+      const label: string =
+        step.name ||
+        step.title ||
+        step.label ||
+        `Baby Step ${index + 1}`;
+
+      const progress = Number(
+        step.progress ??
+          step.percentage ??
+          step.completed_percentage ??
+          0
+      );
+
+      babySteps.push({ label, progress });
+    });
+  } else if (milestoneStatus && typeof milestoneStatus === "object") {
+    // If backend returns an object with keys
+    Object.entries(milestoneStatus).forEach(([key, value]: [string, any]) => {
+      const label =
+        value?.name || value?.title || value?.label || key.replace(/_/g, " ");
+
+      const progress = Number(
+        value?.progress ??
+          value?.percentage ??
+          value?.completed_percentage ??
+          0
+      );
+
+      babySteps.push({ label, progress });
+    });
+  }
 
   return (
     <div className="container py-4">
@@ -144,53 +186,44 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Baby Steps (still static for now) */}
+        {/* Baby Steps Progress (now using milestone_status) */}
         <div className="col-md-6">
           <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Baby Steps Progress</h5>
-              <p className="text-muted">
-                We&apos;ll connect this to real milestone data later.
-              </p>
+              {babySteps.length === 0 ? (
+                <>
+                  <p className="text-muted">
+                    We&apos;ll connect this to real milestone data later.
+                  </p>
+                  <p className="text-muted mb-0">
+                    Complete your Dave Ramsey / milestone questionnaire to see
+                    your progress here.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted">
+                    This shows your progress on each Baby Step based on your
+                    latest responses.
+                  </p>
 
-              <div className="mb-2">
-                <strong>Baby Step 1: Emergency Fund</strong>
-                <div className="progress">
-                  <div
-                    className="progress-bar"
-                    role="progressbar"
-                    style={{ width: "40%" }}
-                  >
-                    40%
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-2">
-                <strong>Baby Step 2: Debt Snowball</strong>
-                <div className="progress">
-                  <div
-                    className="progress-bar bg-success"
-                    role="progressbar"
-                    style={{ width: "10%" }}
-                  >
-                    10%
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <strong>Baby Step 3: 3–6 Month Fund</strong>
-                <div className="progress">
-                  <div
-                    className="progress-bar bg-info"
-                    role="progressbar"
-                    style={{ width: "0%" }}
-                  >
-                    0%
-                  </div>
-                </div>
-              </div>
+                  {babySteps.map((step, index) => (
+                    <div className="mb-2" key={index}>
+                      <strong>{step.label}</strong>
+                      <div className="progress">
+                        <div
+                          className="progress-bar"
+                          role="progressbar"
+                          style={{ width: `${Math.min(step.progress, 100)}%` }}
+                        >
+                          {Math.round(step.progress)}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>
