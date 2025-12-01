@@ -285,3 +285,20 @@ def check_budget_and_send_alert(user: User):
         "percentage": percentage,
         "alert_level": alert_level,
     }
+    
+# -----------------------------------------------------------------------#
+def trigger_budget_alerts_for_user(user: User):
+    """
+    Recalculate this user's monthly budget usage and, if needed,
+    send FR-7 budget alert emails at 75%, 90% and 100%.
+
+    This is called after a new Expense is created.
+    """
+    # Get the latest monthly summary (total_spent, budget, percentage, alert_level)
+    summary = calculate_monthly_summary(user)
+
+    # Send an email only if a threshold (75/90/100) was crossed
+    send_budget_alert_email(user, summary)
+
+    # Optionally return the summary if callers want to use it
+    return summary

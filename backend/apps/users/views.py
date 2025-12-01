@@ -41,6 +41,7 @@ from .serializers import (
 
 from .services import recalculate_baby_steps_and_email
 from .services import check_budget_and_send_alert
+from .services import trigger_budget_alerts_for_user
 from .milestone_logic import evaluate_milestones
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
@@ -208,6 +209,8 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         expense = serializer.save()
         # Trigger budget/overspend alert email (FR-7)
         check_budget_and_send_alert(expense.user_id)
+        # expense.user_id is a FK to User object, not just an int
+        trigger_budget_alerts_for_user(expense.user_id)
 
     @action(detail=False, methods=["get"], url_path="monthly-summary")
     def monthly_summary(self, request):
