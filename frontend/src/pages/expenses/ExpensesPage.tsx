@@ -3,13 +3,15 @@ import React, { useEffect, useState } from "react";
 import {
   fetchExpensesForUser,
   fetchMonthlySummary,
+  fetchCategories,
+  createExpense,
   Expense,
   MonthlySummary,
+  Category,
 } from "../../services/expensesService";
 
-// Helper: try to get user_id from localStorage
+// Helper: get user_id from localStorage
 const getCurrentUserId = (): number | null => {
-  // adjust these keys if your login stores user differently
   const rawUser = localStorage.getItem("user");
   if (rawUser) {
     try {
@@ -18,7 +20,7 @@ const getCurrentUserId = (): number | null => {
         return Number(parsed.user_id);
       }
     } catch {
-      // ignore JSON errors
+      // ignore
     }
   }
 
@@ -34,45 +36,77 @@ const getCurrentUserId = (): number | null => {
 const ExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<MonthlySummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [userId, setUserId] = useState<number | null>(null);
+
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Form state
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [formDate, setFormDate] = useState<string>(todayStr);
+  const [formCategoryId, setFormCategoryId] = useState<string>("");
+  const [formAmount, setFormAmount] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  // Helper: reload expenses + summary (used on first load and after create)
+  const reloadData = async (uId: number) => {
+    const [expensesData, summaryData] = await Promise.all([
+      fetchExpensesForUser(uId),
+      fetchMonthlySummary(),
+    ]);
+    setExpenses(expensesData);
+    setSummary(summaryData);
+  };
+
+  // Initial load
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true);
+        setLoadingInitial(true);
         setError(null);
 
-        const userId = getCurrentUserId();
-        if (!userId) {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
           setError(
             "Could not determine current user. Please log out and log in again."
           );
-          setLoading(false);
+          setLoadingInitial(false);
           return;
         }
+        setUserId(currentUserId);
 
-        // Fetch expenses and summary in parallel
-        const [expensesData, summaryData] = await Promise.all([
-          fetchExpensesForUser(userId),
+        // Load categories, expenses, and summary in parallel
+        const [cats, expensesData, summaryData] = await Promise.all([
+          fetchCategories(),
+          fetchExpensesForUser(currentUserId),
           fetchMonthlySummary(),
         ]);
 
+        setCategories(cats);
         setExpenses(expensesData);
         setSummary(summaryData);
+
+        // Pre-select first category if none chosen yet
+        if (cats.length > 0 && !formCategoryId) {
+          setFormCategoryId(String(cats[0].category_id));
+        }
       } catch (err) {
         console.error("Failed to load expenses or summary", err);
         setError("Could not load daily expenses data.");
       } finally {
-        setLoading(false);
+        setLoadingInitial(false);
       }
     };
 
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Loading state
-  if (loading) {
+  if (loadingInitial) {
     return (
       <div className="container mt-4">
         <h2>Daily Expenses</h2>
@@ -93,7 +127,7 @@ const ExpensesPage: React.FC = () => {
     );
   }
 
-  // We are past loading & error -> safe to render summary + table
+  // Safe to render summary + table
   const totalSpent = summary ? Number(summary.total_spent) : 0;
   const budget = summary ? Number(summary.budget) : 0;
   const percentage = summary ? summary.percentage : 0;
@@ -119,11 +153,63 @@ const ExpensesPage: React.FC = () => {
     }
   }
 
+  // Handle form submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setFormSuccess(null);
+
+    if (!userId) {
+      setFormError("User not found. Please log out and log in again.");
+      return;
+    }
+
+    if (!formDate) {
+      setFormError("Please select a date.");
+      return;
+    }
+
+    if (!formCategoryId) {
+      setFormError("Please select a category.");
+      return;
+    }
+
+    const trimmedAmount = formAmount.trim();
+    const numericAmount = Number(trimmedAmount);
+
+    if (!trimmedAmount || Number.isNaN(numericAmount) || numericAmount <= 0) {
+      setFormError("Please enter a valid amount greater than 0.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await createExpense({
+        user_id: userId,
+        category_id: Number(formCategoryId),
+        amount: numericAmount.toFixed(2),
+        expense_date: formDate,
+      });
+
+      setFormSuccess("Expense added successfully.");
+      setFormAmount("");
+      setFormDate(todayStr); // reset to today, or keep previous, your choice
+      // Refresh list + summary so FR-7 bar & alerts update
+      await reloadData(userId);
+    } catch (err) {
+      console.error("Failed to create expense", err);
+      setFormError("Failed to add expense. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="container mt-4">
       <h2 className="mb-4">Daily Expenses</h2>
 
-      {/* Top row: Monthly summary + alert (FR-7) */}
+      {/* Top row: Monthly summary + tips */}
       <div className="row g-3 mb-4">
         <div className="col-md-6">
           <div className="card shadow-sm h-100">
@@ -170,18 +256,100 @@ const ExpensesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* You can use the right side later for charts or filters */}
         <div className="col-md-6">
           <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Tips</h5>
               <p className="text-muted mb-0">
-                Track your daily expenses here and watch this bar to avoid
-                overspending. Alerts will appear when you reach 75%, 90%, and
-                100% of your budget.
+                Record your daily expenses using the form below. The bar on the
+                left shows how much of your monthly budget you&apos;ve used.
+                Alerts will appear when you reach 75%, 90%, and 100%.
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Add Expense form */}
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">Add Expense</h5>
+
+          {formError && (
+            <div className="alert alert-danger" role="alert">
+              {formError}
+            </div>
+          )}
+          {formSuccess && (
+            <div className="alert alert-success" role="alert">
+              {formSuccess}
+            </div>
+          )}
+
+          <form className="row g-3 align-items-end" onSubmit={handleSubmit}>
+            <div className="col-md-3">
+              <label htmlFor="expense-date" className="form-label">
+                Date
+              </label>
+              <input
+                id="expense-date"
+                type="date"
+                className="form-control"
+                value={formDate}
+                onChange={(e) => setFormDate(e.target.value)}
+              />
+            </div>
+
+            <div className="col-md-4">
+              <label htmlFor="expense-category" className="form-label">
+                Category
+              </label>
+              <select
+                id="expense-category"
+                className="form-select"
+                value={formCategoryId}
+                onChange={(e) => setFormCategoryId(e.target.value)}
+              >
+                {categories.length === 0 && (
+                  <option value="">No categories found</option>
+                )}
+                {categories.length > 0 && formCategoryId === "" && (
+                  <option value="">Select a category</option>
+                )}
+                {categories.map((cat) => (
+                  <option key={cat.category_id} value={cat.category_id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-md-3">
+              <label htmlFor="expense-amount" className="form-label">
+                Amount
+              </label>
+              <input
+                id="expense-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                className="form-control"
+                value={formAmount}
+                onChange={(e) => setFormAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="col-md-2 d-grid">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={submitting}
+              >
+                {submitting ? "Saving..." : "Add Expense"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 

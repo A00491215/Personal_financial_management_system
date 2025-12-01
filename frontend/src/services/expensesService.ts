@@ -1,21 +1,13 @@
 // frontend/src/services/expensesService.ts
 import axios from "axios";
 
-/**
- * Configure axios instance.
- * - Uses the same base URL as backend API.
- * - Attaches JWT access token from localStorage ("access").
- *
- * NOTE:
- * If you later want to change base URL, update BASE_URL only.
- */
-const BASE_URL = "http://localhost:8000/api"; // works when running frontend locally
+const BASE_URL = "http://localhost:8000/api"; // change to http://backend:8000/api if needed in Docker
 
 const api = axios.create({
   baseURL: BASE_URL,
 });
 
-// Add Authorization header automatically
+// Attach JWT token from localStorage to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access");
   if (token) {
@@ -27,7 +19,7 @@ api.interceptors.request.use((config) => {
 
 /** Matches your Expense model / serializer */
 export interface Expense {
-  expense_date: string; // primary key (date string YYYY-MM-DD)
+  expense_date: string; // primary key (YYYY-MM-DD)
   user_id: number;
   category_id: number;
   amount: string;
@@ -36,10 +28,16 @@ export interface Expense {
   category_name?: string;
 }
 
+/** Matches Category model / serializer */
+export interface Category {
+  category_id: number;
+  name: string;
+}
+
 /** Monthly summary for FR-7 budget alerts */
 export interface MonthlySummary {
   total_spent: string;  // decimal as string
-  budget: string;       // salary / budget as string
+  budget: string;       // decimal as string
   percentage: number;   // 0–100+
   alert_level: number;  // 0, 75, 90, 100
 }
@@ -77,5 +75,14 @@ export async function createExpense(data: {
  */
 export async function fetchMonthlySummary(): Promise<MonthlySummary> {
   const response = await api.get<MonthlySummary>("/expenses/monthly-summary/");
+  return response.data;
+}
+
+/**
+ * Load all categories.
+ * Backend: GET /api/categories/
+ */
+export async function fetchCategories(): Promise<Category[]> {
+  const response = await api.get<Category[]>("/categories/");
   return response.data;
 }
