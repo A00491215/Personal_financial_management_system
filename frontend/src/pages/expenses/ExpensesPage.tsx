@@ -8,6 +8,7 @@ import {
   Expense,
   MonthlySummary,
   Category,
+  ExpenseFilters,
 } from "../../services/expensesService";
 
 // Helper: get user_id from localStorage
@@ -51,10 +52,30 @@ const ExpensesPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
-  // Helper: reload expenses + summary (used on first load and after create)
-  const reloadData = async (uId: number) => {
+  // 🔍 Filter state
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterEndDate, setFilterEndDate] = useState<string>("");
+  const [filterCategoryId, setFilterCategoryId] = useState<string>("");
+
+  // Build filters object from current filter state
+  const buildFilters = (): ExpenseFilters => {
+    const filters: ExpenseFilters = {};
+    if (filterStartDate) {
+      filters.date_from = filterStartDate;
+    }
+    if (filterEndDate) {
+      filters.date_to = filterEndDate;
+    }
+    if (filterCategoryId) {
+      filters.category_id = Number(filterCategoryId);
+    }
+    return filters;
+  };
+
+  // Helper: reload expenses + summary (used on first load and after create / filter)
+  const reloadData = async (uId: number, filters: ExpenseFilters = {}) => {
     const [expensesData, summaryData] = await Promise.all([
-      fetchExpensesForUser(uId),
+      fetchExpensesForUser(uId, filters),
       fetchMonthlySummary(),
     ]);
     setExpenses(expensesData);
@@ -89,7 +110,7 @@ const ExpensesPage: React.FC = () => {
         setExpenses(expensesData);
         setSummary(summaryData);
 
-        // Pre-select first category if none chosen yet
+        // Pre-select first category in form if none chosen yet
         if (cats.length > 0 && !formCategoryId) {
           setFormCategoryId(String(cats[0].category_id));
         }
@@ -153,7 +174,7 @@ const ExpensesPage: React.FC = () => {
     }
   }
 
-  // Handle form submit
+  // Handle form submit (add expense)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -195,14 +216,32 @@ const ExpensesPage: React.FC = () => {
       setFormSuccess("Expense added successfully.");
       setFormAmount("");
       setFormDate(todayStr); // reset to today, or keep previous, your choice
+
       // Refresh list + summary so FR-7 bar & alerts update
-      await reloadData(userId);
+      const filters = buildFilters();
+      await reloadData(userId, filters);
     } catch (err) {
       console.error("Failed to create expense", err);
       setFormError("Failed to add expense. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Handle filter apply
+  const handleApplyFilters = async () => {
+    if (!userId) return;
+    const filters = buildFilters();
+    await reloadData(userId, filters);
+  };
+
+  // Handle filter clear
+  const handleClearFilters = async () => {
+    if (!userId) return;
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setFilterCategoryId("");
+    await reloadData(userId, {}); // no filters
   };
 
   return (
@@ -217,10 +256,12 @@ const ExpensesPage: React.FC = () => {
               <h5 className="card-title">This Month&apos;s Budget Overview</h5>
               <p className="mb-1">
                 <strong>Spent:</strong>{" "}
-                ${totalSpent.toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                {totalSpent.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })}{" "}
                 {budget > 0 && (
                   <>
-                    of $
+                    of{" "}
                     {budget.toLocaleString(undefined, {
                       maximumFractionDigits: 2,
                     })}
@@ -265,6 +306,64 @@ const ExpensesPage: React.FC = () => {
                 left shows how much of your monthly budget you&apos;ve used.
                 Alerts will appear when you reach 75%, 90%, and 100%.
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🔍 Filters */}
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <h5 className="card-title mb-3">Filters</h5>
+          <div className="row g-3 align-items-end">
+            <div className="col-md-3">
+              <label className="form-label">From date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">To date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Category</label>
+              <select
+                className="form-select"
+                value={filterCategoryId}
+                onChange={(e) => setFilterCategoryId(e.target.value)}
+              >
+                <option value="">All categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.category_id} value={cat.category_id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-3 d-flex gap-2">
+              <button
+                type="button"
+                className="btn btn-primary flex-fill"
+                onClick={handleApplyFilters}
+              >
+                Apply filters
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary flex-fill"
+                onClick={handleClearFilters}
+              >
+                Clear
+              </button>
             </div>
           </div>
         </div>
@@ -382,7 +481,6 @@ const ExpensesPage: React.FC = () => {
                       </td>
                       <td>{exp.category_name ?? exp.category_id}</td>
                       <td className="text-end">
-                        $
                         {Number(exp.amount).toLocaleString(undefined, {
                           maximumFractionDigits: 2,
                         })}

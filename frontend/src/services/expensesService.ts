@@ -42,16 +42,36 @@ export interface MonthlySummary {
   alert_level: number;  // 0, 75, 90, 100
 }
 
+/** Optional filters for expenses list */
+export interface ExpenseFilters {
+  date_from?: string;    // "YYYY-MM-DD"
+  date_to?: string;      // "YYYY-MM-DD"
+  category_id?: number;  // category_id from Category
+}
+
 /**
- * Get all expenses for a specific user.
- * Backend: GET /api/expenses/?user_id={userId}
+ * Get all expenses for a specific user, with optional filters.
+ * Backend: GET /api/expenses/?user_id={userId}&date_from=...&date_to=...&category_id=...
  */
 export async function fetchExpensesForUser(
-  userId: number
+  userId: number,
+  filters: ExpenseFilters = {}
 ): Promise<Expense[]> {
-  const response = await api.get<Expense[]>("/expenses/", {
-    params: { user_id: userId },
-  });
+  const params: any = {
+    user_id: userId,
+  };
+
+  if (filters.date_from) {
+    params.date_from = filters.date_from;
+  }
+  if (filters.date_to) {
+    params.date_to = filters.date_to;
+  }
+  if (typeof filters.category_id === "number") {
+    params.category_id = filters.category_id;
+  }
+
+  const response = await api.get<Expense[]>("/expenses/", { params });
   return response.data;
 }
 

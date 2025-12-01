@@ -190,17 +190,36 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Daily expenses will use this. We filter optionally by ?user_id=
-        and order newest expenses first.
+        List expenses for the current user, with optional filters:
+        - user_id (int, optional – mainly for admin/testing)
+        - category_id (int, optional)
+        - date_from (YYYY-MM-DD, optional)
+        - date_to   (YYYY-MM-DD, optional)
         """
         qs = Expense.objects.all().select_related("user_id", "category_id")
-        qs = qs.order_by("-expense_date", "-created_at")
-
+        # Prefer explicit user_id query param if passed,
+        # otherwise default to the authenticated user.
         user_id = self.request.query_params.get("user_id")
         if user_id:
-            qs = qs.filter(user_id=user_id)
+            qs = qs.filter(user_id__user_id=user_id)
+        elif self.request.user.is_authenticated:
+            qs = qs.filter(user_id=self.request.user)
 
-        return qs
+        category_id = self.request.query_params.get("category_id")
+        if category_id:
+            qs = qs.filter(category_id__category_id=category_id)
+
+        date_from = self.request.query_params.get("date_from")
+        if date_from:
+            qs = qs.filter(expense_date__gte=date_from)
+
+        date_to = self.request.query_params.get("date_to")
+        if date_to:
+            qs = qs.filter(expense_date__lte=date_to)
+
+        # Most recent first
+        return qs.order_by("-expense_date", "-created_at")
+
 
     def perform_create(self, serializer):
         """
