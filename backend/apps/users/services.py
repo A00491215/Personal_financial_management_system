@@ -7,6 +7,8 @@ from django.core.mail import send_mail
 from django.db.models import Sum
 from django.utils import timezone
 
+from .models import Expense, User
+
 from .models import (
     User,
     Category,
@@ -216,3 +218,70 @@ def _send_milestone_email(user: User, completed_flags: list[bool]) -> None:
         recipient_list=[user.email],
         fail_silently=True,
     )
+
+
+# --------------------#Email alert for daily expense#--------------------
+def check_budget_and_send_alert(user: User):
+    """
+    Calculate current month's spending vs user's budget (salary),
+    and send an email alert when usage reaches 75%, 90%, or 100%.
+    Returns a dict with percentage and alert_level or None.
+    """
+    if not user or not user.email:
+        return None
+
+    # Assume salary is the monthly budget
+    budget = user.salary or Decimal("0")
+    if not budget or budget <= 0:
+        return None
+
+    today = timezone.now().date()
+    first_day = today.replace(day=1)
+
+    total_spent = (
+        Expense.objects.filter(
+            user_id=user,
+            expense_date__gte=first_day,
+            expense_date__lte=today,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0")
+    )
+
+    percentage = int((total_spent / budget) * 100) if budget > 0 else 0
+
+    alert_level = 0
+    if percentage >= 100:
+        alert_level = 100
+    elif percentage >= 90:
+        alert_level = 90
+    elif percentage >= 75:
+        alert_level = 75
+
+    if alert_level == 0:
+        return None
+
+    # Simple email body – you can style later
+    subject = f"Budget Alert: {percentage}% of your monthly budget used"
+    message = (
+        f"Hi {user.username},\n\n"
+        f"You have spent {total_spent} out of your monthly budget {budget} "
+        f"({percentage}% used).\n\n"
+        f"Threshold {alert_level}% has been reached.\n"
+        f"Please review your recent expenses in the Daily Expenses page.\n\n"
+        f"- PFM System"
+    )
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
+    )
+
+    return {
+        "total_spent": total_spent,
+        "budget": budget,
+        "percentage": percentage,
+        "alert_level": alert_level,
+    }

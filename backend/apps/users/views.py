@@ -40,6 +40,7 @@ from .serializers import (
 )
 
 from .services import recalculate_baby_steps_and_email
+from .services import check_budget_and_send_alert
 from .milestone_logic import evaluate_milestones
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
@@ -184,8 +185,73 @@ class CategoryViewSet(viewsets.ModelViewSet):
 # =====================================================================
 
 class ExpenseViewSet(viewsets.ModelViewSet):
-    queryset = Expense.objects.all().select_related("user_id", "category_id")
     serializer_class = ExpenseSerializer
+
+    def get_queryset(self):
+        """
+        Daily expenses will use this. We filter optionally by ?user_id=
+        and order newest expenses first.
+        """
+        qs = Expense.objects.all().select_related("user_id", "category_id")
+        qs = qs.order_by("-expense_date", "-created_at")
+
+        user_id = self.request.query_params.get("user_id")
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+
+        return qs
+
+    def perform_create(self, serializer):
+        """
+        When a new expense is created, also check budget and send alerts.
+        """
+        expense = serializer.save()
+        # Trigger budget/overspend alert email (FR-7)
+        check_budget_and_send_alert(expense.user_id)
+
+    @action(detail=False, methods=["get"], url_path="monthly-summary")
+    def monthly_summary(self, request):
+        """
+        Returns this month's spending vs budget for the authenticated user.
+        Used by the Daily Expenses page to show 75/90/100% alerts visually.
+        """
+        user = request.user
+        if not user.is_authenticated:
+            return Response(
+                {"detail": "Authentication credentials were not provided."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        today = timezone.now().date()
+        first_day = today.replace(day=1)
+
+        total_spent = (
+            Expense.objects.filter(
+                user_id=user,
+                expense_date__gte=first_day,
+                expense_date__lte=today,
+            ).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0")
+        )
+
+        budget = user.salary or Decimal("0")
+        percentage = int((total_spent / budget) * 100) if budget > 0 else 0
+
+        alert_level = 0
+        if percentage >= 100:
+            alert_level = 100
+        elif percentage >= 90:
+            alert_level = 90
+        elif percentage >= 75:
+            alert_level = 75
+
+        data = {
+            "total_spent": str(total_spent),
+            "budget": str(budget),
+            "percentage": percentage,
+            "alert_level": alert_level,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 # =====================================================================
