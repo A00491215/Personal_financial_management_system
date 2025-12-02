@@ -3,6 +3,7 @@
 from django.db import migrations, models
 import django.db.models.deletion
 from django.contrib.auth.hashers import make_password
+from django.core.validators import RegexValidator, EmailValidator
 
 
 # ----------------------------
@@ -14,6 +15,13 @@ def create_initial_users(apps, schema_editor):
         username='admin',
         email='admin@gmail.com',
         password=make_password('admin123'),
+        first_name="System",
+        last_name="Admin",
+        country="Canada",
+        province_state="Ontario",
+        city="Toronto",
+        postal_code="M5V 2T6",
+        phone_number="+14165551234",
         salary=100000.00,
         total_balance=50000.00,
         budget_preference='monthly',
@@ -25,6 +33,13 @@ def create_initial_users(apps, schema_editor):
         username='user1',
         email='user1@gmail.com',
         password=make_password('password123'),
+        first_name="John",
+        last_name="Doe",
+        country="US",
+        province_state="California",
+        city="San Francisco",
+        postal_code="94105",
+        phone_number="+14155550123",
         salary=75000.00,
         total_balance=25000.00,
         budget_preference='weekly',
@@ -38,11 +53,30 @@ def create_initial_users(apps, schema_editor):
 def create_categories(apps, schema_editor):
     Category = apps.get_model('users', 'Category')
     categories = [
+        "Entertainment",
+        "Grocery",
+        "Food",
+        "Travel",
+        "Utilities",
+        "Transportation",
+        "Health & Medical",
+        "Clothing",
+        "Education",
+        "Insurance",
+        "Savings",
+        "Investments",
+        "Rent / Mortgage",
+        "Gifts & Donations",
+        "Household Supplies",
+        "Subscriptions",
         "Emergency Savings",
         "Full Emergency Savings",
         "Retirement Investing",
         "Children Contribution",
         "Home Mortgage"
+        "Personal Care",
+        "Miscellaneous",
+        "Other",
     ]
     for name in categories:
         Category.objects.create(name=name)
@@ -52,22 +86,64 @@ class Migration(migrations.Migration):
 
     initial = True
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),  # Required for groups/permissions
+        ('auth', '0012_alter_user_first_name_max_length'),
     ]
 
     operations = [
 
         # ------------------------------------------------------
-        # USERS TABLE (CUSTOM USER MODEL)
+        # USERS TABLE
         # ------------------------------------------------------
         migrations.CreateModel(
             name='User',
             fields=[
                 ('user_id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('username', models.CharField(max_length=150, unique=True)),
-                ('email', models.EmailField(max_length=254, unique=True)),
+                ('username', models.CharField(
+                    max_length=150,
+                    unique=True,
+                    validators=[RegexValidator(
+                        regex=r'^[A-Za-z\s\-_.]+$',
+                        message='Username cannot contain numbers or special characters.'
+                    )]
+                )),
+                ('email', models.EmailField(
+                    max_length=254,
+                    unique=True,
+                    validators=[EmailValidator()]
+                )),
                 ('password', models.CharField(max_length=128)),
 
+                # NEW FIELDS
+                ('first_name', models.CharField(
+                    max_length=100,
+                    validators=[RegexValidator(
+                        regex=r'^[A-Za-z\s]+$',
+                        message='First name cannot contain numbers or special characters.'
+                    )]
+                )),
+                ('last_name', models.CharField(
+                    max_length=100,
+                    validators=[RegexValidator(
+                        regex=r'^[A-Za-z\s]+$',
+                        message='Last name cannot contain numbers or special characters.'
+                    )]
+                )),
+                ('country', models.CharField(
+                    max_length=20,
+                    choices=[("Canada", "CANADA"), ("United States", "US")]
+                )),
+                ('province_state', models.CharField(max_length=50)),
+                ('city', models.CharField(
+                    max_length=100,
+                    validators=[RegexValidator(
+                        regex=r'^[A-Za-z\s]+$',
+                        message='City cannot contain numbers or special characters.'
+                    )]
+                )),
+                ('postal_code', models.CharField(max_length=20)),
+                ('phone_number', models.CharField(max_length=20)),
+
+                # FINANCIAL FIELDS
                 ('salary', models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)),
                 ('total_balance', models.DecimalField(max_digits=12, decimal_places=2, default=0.00)),
 

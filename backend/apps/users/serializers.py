@@ -1,6 +1,7 @@
 # backend/apps/users/serializers.py
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.validators import RegexValidator
 from django.contrib.auth.hashers import check_password
 from .models import (
     User, Category, Expense, ChildrenContribution,
@@ -9,30 +10,100 @@ from .models import (
 
 
 class UserSerializer(serializers.ModelSerializer):
+
+    # -----------------------------
+    # VALIDATORS
+    # -----------------------------
+
+    no_special_chars = RegexValidator(
+        regex=r'^[A-Za-z\s\-]+$',
+        message="Only letters, spaces and hyphens are allowed. Digits and special characters are not allowed."
+    )
+
+    ca_postal_validator = RegexValidator(
+        regex=r'^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$',
+        message="Invalid Canadian postal code format (e.g. A1A 1A1)."
+    )
+
+    us_zip_validator = RegexValidator(
+        regex=r'^\d{5}(-\d{4})?$',
+        message="Invalid US ZIP code format (e.g. 12345 or 12345-6789)."
+    )
+
+    phone_validator = RegexValidator(
+        regex=r'^\+?1?\s*\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$',
+        message="Invalid phone number. Must be a valid US/Canadian number."
+    )
+
+    # -----------------------------
+    # CUSTOM FIELD VALIDATION
+    # -----------------------------
+    def validate(self, data):
+        country = data.get("country")
+        postal = data.get("postal_code")
+
+        # Country validation
+        if country not in ["Canada", "US"]:
+            raise serializers.ValidationError({"country": "Country must be Canada or US."})
+
+        # Postal code validation based on country
+        if country == "Canada":
+            self.ca_postal_validator(postal)
+        elif country == "US":
+            self.us_zip_validator(postal)
+
+        # Phone validation only for US/Canada
+        phone = data.get("phone_number")
+        if phone:
+            self.phone_validator(phone)
+
+        return data
+
     class Meta:
         model = User
         fields = [
-            'user_id', 'username', 'email', 'password', 'salary',
-            'total_balance', 'budget_preference', 'email_notification',
-            'created_at', 'updated_at'
+            'user_id',
+            'username',
+            'password',
+            'email',
+            'first_name',
+            'last_name',
+            'city',
+            'province_state',
+            'country',
+            'postal_code',
+            'phone_number',
+            'salary',
+            'total_balance',
+            'budget_preference',
+            'email_notification',
+            'created_at',
+            'updated_at',
         ]
+
         extra_kwargs = {
             'password': {'write_only': True},
             'user_id': {'read_only': True},
             'created_at': {'read_only': True},
-            'updated_at': {'read_only': True}
+            'updated_at': {'read_only': True},
         }
 
+    # -----------------------------------
+    # OVERRIDE CREATE (hash password)
+    # -----------------------------------
     def create(self, validated_data):
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
         user.save()
         return user
 
+    # -----------------------------------
+    # OVERRIDE UPDATE
+    # -----------------------------------
     def update(self, instance, validated_data):
-        if 'password' in validated_data:
-            password = validated_data.pop('password')
+        if "password" in validated_data:
+            password = validated_data.pop("password")
             instance.set_password(password)
         return super().update(instance, validated_data)
 

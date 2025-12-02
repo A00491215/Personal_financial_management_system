@@ -147,13 +147,19 @@ export interface components {
       parent_name: string;
       /** Format: decimal */
       total_contribution_planned?: string | null;
+      has_total_contribution?: boolean;
       /** Format: decimal */
-      has_total_contribution: boolean;
       monthly_contribution?: string | null;
       /** Format: date-time */
       created_at: string;
       user_username: string;
     };
+    /**
+     * @description * `Canada` - Canada
+     * * `US` - US
+     * @enum {string}
+     */
+    CountryEnum: "Canada" | "US";
     Expense: {
       /** Format: date */
       expense_date: string;
@@ -209,9 +215,16 @@ export interface components {
     PatchedUser: {
       user_id?: number;
       username?: string;
+      password?: string;
       /** Format: email */
       email?: string;
-      password?: string;
+      first_name?: string;
+      last_name?: string;
+      city?: string;
+      province_state?: string;
+      country?: components["schemas"]["CountryEnum"];
+      postal_code?: string;
+      phone_number?: string;
       /** Format: decimal */
       salary?: string | null;
       /** Format: decimal */
@@ -263,9 +276,16 @@ export interface components {
     User: {
       user_id: number;
       username: string;
+      password: string;
       /** Format: email */
       email: string;
-      password: string;
+      first_name: string;
+      last_name: string;
+      city: string;
+      province_state: string;
+      country: components["schemas"]["CountryEnum"];
+      postal_code: string;
+      phone_number: string;
       /** Format: decimal */
       salary?: string | null;
       /** Format: decimal */
