@@ -29,13 +29,13 @@ const AppShell: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ProfileProvider>
-        <FinanceProvider>
+    <ProfileProvider>
+      <FinanceProvider>
+        <AuthProvider>
           <AppShell />
-        </FinanceProvider>
-      </ProfileProvider>
-    </AuthProvider>
+        </AuthProvider>
+      </FinanceProvider>
+    </ProfileProvider>
   );
 };
 

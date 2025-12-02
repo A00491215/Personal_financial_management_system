@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useProfileContext } from "../../contexts/ProfileContext";
+import { financeService } from "../../services/finance.service";
 import "./Auth.scss";
 
 const LoginPage: React.FC = () => {
-  const { login, loading } = useAuthContext();
+  const { login, loading, user } = useAuthContext();
   const { fetchProfile } = useProfileContext();
   const navigate = useNavigate();
-  const location = useLocation() as any;
-  const from = location.state?.from?.pathname || "/dashboard";
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +22,36 @@ const LoginPage: React.FC = () => {
     setError(null);
 
     try {
-      // 🔹 Perform login via AuthContext
-      const loggedInUser = await login(form);
+      // LOGIN FIRST
+      await login(form);
 
-      // loggedInUser MUST return user_id
-      const userId = Number(localStorage.getItem("user_id"));
+      // GET USER ID
+      const userId = user?.user_id ?? Number(localStorage.getItem("user_id"));
+      if (!userId) throw new Error("Invalid user ID");
 
-      if (userId) {
-        // 🔥 Auto-fetch profile as soon as user logs in
-        await fetchProfile(userId);
+      // FETCH PROFILE
+      await fetchProfile(userId);
+
+      // CHECK IF USER ALREADY HAS FINANCE RESPONSE
+      let hasUserResponse = false;
+      try {
+        const res = await financeService.getResponseForUser(userId);
+        if (res === null) hasUserResponse = false;
+        else hasUserResponse = true;
+      } catch (err) {
+        hasUserResponse = false;
       }
 
-      // Redirect
-      navigate(from, { replace: true });
+      // SAVE FLAG IN LOCAL STORAGE
+      // firstLogin = true → navigate to baby steps
+      // firstLogin = false → navigate to dashboard
+      if (hasUserResponse) {
+        localStorage.setItem("completed_baby_steps", "true");
+        navigate("/dashboard", { replace: true });
+      } else {
+        localStorage.setItem("completed_baby_steps", "false");
+        navigate("/finance", { replace: true });
+      }
 
     } catch (err: any) {
       setError(err?.message || "Invalid credentials");
@@ -59,7 +75,9 @@ const LoginPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="mb-3">
-              <label className="form-label">Email</label>
+              <label className="form-label">Email
+                <span className="required-star">*</span>
+              </label>
               <input
                 type="email"
                 name="email"
@@ -71,7 +89,9 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Password</label>
+              <label className="form-label">Password
+                <span className="required-star">*</span>
+              </label>
               <input
                 type="password"
                 name="password"
@@ -92,7 +112,7 @@ const LoginPage: React.FC = () => {
           </form>
 
           <p className="text-center mt-3 mb-0">
-            Don&apos;t have an account? <Link to="/register">Create one</Link>
+            Don't have an account? <Link to="/register">Create one</Link>
           </p>
         </div>
       </div>

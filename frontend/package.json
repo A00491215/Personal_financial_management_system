@@ -1,0 +1,56 @@
+{
+  "name": "fullstack-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@types/node": "^16.18.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "axios": "^1.6.0",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.13.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "react-scripts": "5.0.1",
+    "resolve-url-loader": "^5.0.0",
+    "typescript": "^4.9.0"
+  },
+  "devDependencies": {
+    "@biomejs/wasm-nodejs": "^2.3.5",
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "openapi-fetch": "^0.8.2",
+    "openapi-typescript": "^6.7.1",
+    "sass": "^1.75.0",
+    "swagger-typescript-api": "^13.2.13"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .ts,.tsx",
+    "generate-client": "swagger-typescript-api generate -p http://localhost:8000/api/schema/ -o src/generated -n api-client.ts --axios --className ApiClient --extract-request-params --extract-request-body --extract-response-body",
+    "generate-types": "openapi-typescript http://localhost:8000/api/schema/ --output src/generated/api-types.ts",
+    "generate-api": "npm run generate-types && npm run generate-client"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://backend:8000"
+}

@@ -13,24 +13,24 @@ const Navbar: React.FC = () => {
 
   // Hide navbar fully when logged out
   if (!user) return null;
-
-  // Wait for profile load
   if (profileLoading || !profile) return null;
+
+  const completed = localStorage.getItem("completed_baby_steps") === "true";
 
   const handleLogout = () => {
     logout();
+    localStorage.clear();
     navigate("/login");
   };
 
   const navClass = (path: string, current: string) =>
-  "nav-item" + (current === path ? " active" : "");
+    "nav-item" + (current === path ? " active" : "");
 
   return (
     <nav className="pfm-navbar">
       <div className="navbar-left">
-        <Link to="/dashboard" className="brand">
-          PFM
-        </Link>
+
+        <Link to="/dashboard" className="brand">Personal Finance Management</Link>
 
         <Link to="/dashboard" className={navClass("/dashboard", currentPath)}>
           Dashboard
@@ -40,13 +40,17 @@ const Navbar: React.FC = () => {
           Daily Expenses
         </Link>
 
-        <Link to="/finance" className={navClass("/finance", currentPath)}>
-          Seven Baby Steps
-        </Link>
+        {!completed && (
+          <Link to="/finance" className={navClass("/finance", currentPath)}>
+            Seven Baby Steps
+          </Link>
+        )}
 
-        <Link to="/milestones" className={navClass("/milestones", currentPath)}>
-          Milestones
-        </Link>
+        {completed && (
+          <Link to="/milestones" className={navClass("/milestones", currentPath)}>
+            Milestones
+          </Link>
+        )}
 
         <Link to="/profile" className={navClass("/profile", currentPath)}>
           Profile

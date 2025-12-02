@@ -52,7 +52,7 @@ const RegisterPage: React.FC = () => {
 
     try {
       await apiClient.api.usersRegisterCreate(body as User);
-
+      localStorage.setItem("completed_baby_steps", "false");
       setSuccessHeader("Account created successfully! Redirecting to login...");
 
       setTimeout(() => navigate("/login"), 1500);

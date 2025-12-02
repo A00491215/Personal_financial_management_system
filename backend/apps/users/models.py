@@ -122,6 +122,7 @@ class ChildrenContribution(models.Model):
         null=True,
         blank=True
     )
+    has_total_contribution = models.BooleanField(default=False)
     monthly_contribution = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -190,6 +191,13 @@ class UserResponse(models.Model):
     )
     has_debt = models.BooleanField(default=False)
     debt_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    full_emergency_fund = models.BooleanField(default=False)
+    full_emergency_fund_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         null=True,

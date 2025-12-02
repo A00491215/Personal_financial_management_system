@@ -100,7 +100,7 @@ def recalculate_baby_steps_and_email(user: User) -> None:
     # ---- Step 3: Full Emergency fund: 6 months of salary ----
     full_emergency_sum = _get_sum_for_category(user, "Full Emergency savings")
     target_full_fund = salary * Decimal("6")
-    step3_completed = full_emergency_sum >= target_full_fund
+    step3_completed = user_response.full_emergency_fund and full_emergency_sum >= target_full_fund
 
     # ---- Step 4: Invest 15% for retirement ----
     retirement_sum = _get_sum_for_category(user, "Retirement Investing")

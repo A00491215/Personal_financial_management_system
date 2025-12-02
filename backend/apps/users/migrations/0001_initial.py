@@ -170,6 +170,7 @@ class Migration(migrations.Migration):
                 ('total_contribution_planned', models.DecimalField(
                     max_digits=12, decimal_places=2, null=True, blank=True
                 )),
+                ('has_total_contribution', models.BooleanField(default=False)),
                 ('monthly_contribution', models.DecimalField(
                     max_digits=10, decimal_places=2, null=True, blank=True
                 )),
@@ -241,6 +242,10 @@ class Migration(migrations.Migration):
                 )),
                 ('has_debt', models.BooleanField(default=False)),
                 ('debt_amount', models.DecimalField(
+                    max_digits=12, decimal_places=2, null=True, blank=True
+                )),
+                ('full_emergency_fund', models.BooleanField(default=False)),
+                ('full_emergency_fund_amount', models.DecimalField(
                     max_digits=12, decimal_places=2, null=True, blank=True
                 )),
                 ('retirement_investing', models.BooleanField(default=False)),
