@@ -48,54 +48,68 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  // Safely read values from API response
-  const totalBalance = Number(data?.total_balance ?? 0);
-  const monthlyIncome = Number(data?.monthly_income ?? 0);
-  const monthlyExpenses = Number(data?.monthly_expenses ?? 0);
-  const savingsRate = data?.savings_rate ?? 0;
+  // --------- Top numbers ----------
+  const totalBalance = Number(data.total_balance ?? 0);
+  const monthlyIncome = Number(data.monthly_income ?? 0);
+  const monthlyExpenses = Number(data.monthly_expenses ?? 0);
+  const savingsRate = data.savings_rate ?? 0;
 
-  // Real recent expenses from backend
+  // --------- Recent expenses ----------
   const recentExpenses = data.recent_expenses ?? [];
 
-  // ---------------- Baby Steps / Milestones ----------------
-  const milestoneStatus = data.milestone_status;
+  // --------- Baby steps / milestones ----------
+  const milestoneStatus: any = data.milestone_status || {};
 
-  type BabyStepView = { label: string; progress: number };
+  const babyMessage: string =
+    typeof milestoneStatus.message === "string" &&
+    milestoneStatus.message.trim() !== ""
+      ? milestoneStatus.message
+      : "This shows your progress on each Baby Step based on your latest responses.";
 
-  const babySteps: BabyStepView[] = [];
+  const rawMilestones = milestoneStatus.milestones;
+  let babyMilestones: string[] = [];
 
-  if (Array.isArray(milestoneStatus)) {
-    // If backend returns an array like [{ name, progress }, ...]
-    milestoneStatus.forEach((step: any, index: number) => {
-      const label: string =
-        step.name ||
-        step.title ||
-        step.label ||
-        `Baby Step ${index + 1}`;
+  if (Array.isArray(rawMilestones)) {
+    babyMilestones = rawMilestones.map((item: any) => {
+      // If backend already returned a simple string, use it directly
+      if (typeof item === "string") {
+        return item;
+      }
 
-      const progress = Number(
-        step.progress ??
-          step.percentage ??
-          step.completed_percentage ??
-          0
-      );
+      // If it's an object, format it nicely
+      if (item && typeof item === "object") {
+        // Try to build something like:
+        // "Baby Step 1: Emergency Fund – 40% complete (4000 / 10000)"
+        const stepLabel =
+          item.step ||
+          item.title ||
+          "Baby Step";
 
-      babySteps.push({ label, progress });
-    });
-  } else if (milestoneStatus && typeof milestoneStatus === "object") {
-    // If backend returns an object with keys
-    Object.entries(milestoneStatus).forEach(([key, value]: [string, any]) => {
-      const label =
-        value?.name || value?.title || value?.label || key.replace(/_/g, " ");
+        const progress =
+          item.progress_percentage ??
+          item.progress ??
+          null;
 
-      const progress = Number(
-        value?.progress ??
-          value?.percentage ??
-          value?.completed_percentage ??
-          0
-      );
+        const amountsPart =
+          item.current_amount != null && item.required_amount != null
+            ? ` (${item.current_amount} / ${item.required_amount})`
+            : item.debt_amount != null
+            ? ` (Debt: ${item.debt_amount})`
+            : "";
 
-      babySteps.push({ label, progress });
+        const progressPart =
+          progress != null ? ` – ${Number(progress).toFixed(0)}% complete` : "";
+
+        if (item.message) {
+          // If backend already gives a human message, prefer that
+          return String(item.message);
+        }
+
+        return `${stepLabel}${progressPart}${amountsPart}`;
+      }
+
+      // Fallback: stringify anything weird
+      return String(item);
     });
   }
 
@@ -133,7 +147,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="col-md-3 ">
+        <div className="col-md-3">
           <div className="card shadow-sm h-100">
             <div className="card-body">
               <h6 className="text-muted mb-1">Monthly Expenses</h6>
@@ -186,43 +200,25 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Baby Steps Progress (now using milestone_status) */}
+        {/* Baby Steps Progress */}
         <div className="col-md-6">
           <div className="card shadow-sm h-100">
             <div className="card-body">
               <h5 className="card-title">Baby Steps Progress</h5>
-              {babySteps.length === 0 ? (
-                <>
-                  <p className="text-muted">
-                    We&apos;ll connect this to real milestone data later.
-                  </p>
-                  <p className="text-muted mb-0">
-                    Complete your Dave Ramsey / milestone questionnaire to see
-                    your progress here.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-muted">
-                    This shows your progress on each Baby Step based on your
-                    latest responses.
-                  </p>
 
-                  {babySteps.map((step, index) => (
-                    <div className="mb-2" key={index}>
-                      <strong>{step.label}</strong>
-                      <div className="progress">
-                        <div
-                          className="progress-bar"
-                          role="progressbar"
-                          style={{ width: `${Math.min(step.progress, 100)}%` }}
-                        >
-                          {Math.round(step.progress)}%
-                        </div>
-                      </div>
-                    </div>
+              <p className="mb-2">{babyMessage}</p>
+
+              {babyMilestones.length === 0 ? (
+                <p className="text-muted mb-0">
+                  Once you complete the Milestones questionnaire, your
+                  step-by-step progress will appear here.
+                </p>
+              ) : (
+                <ul className="mb-0">
+                  {babyMilestones.map((line, idx) => (
+                    <li key={idx}>{line}</li>
                   ))}
-                </>
+                </ul>
               )}
             </div>
           </div>
