@@ -9,6 +9,8 @@ from django.utils import timezone
 
 from .models import Expense, User
 
+ALERT_THRESHOLDS = [75, 90, 100]
+
 from .models import (
     User,
     Category,
@@ -285,20 +287,62 @@ def check_budget_and_send_alert(user: User):
         "percentage": percentage,
         "alert_level": alert_level,
     }
-    
 # -----------------------------------------------------------------------#
-def trigger_budget_alerts_for_user(user: User):
+def calculate_monthly_summary(user: User) -> dict:
     """
-    Recalculate this user's monthly budget usage and, if needed,
-    send FR-7 budget alert emails at 75%, 90% and 100%.
+    Compute this month's spending vs budget for a user.
 
-    This is called after a new Expense is created.
+    Returns a dict compatible with your MonthlySummary serializer:
+    {
+        "total_spent": Decimal,
+        "budget": Decimal,
+        "percentage": float,   # 0–100+
+        "alert_level": int,    # 0, 75, 90, or 100
+    }
     """
-    # Get the latest monthly summary (total_spent, budget, percentage, alert_level)
+    today = timezone.now().date()
+    first_day = today.replace(day=1)
+
+    # All expenses for this user in the current month
+    qs = Expense.objects.filter(
+        user_id=user,
+        expense_date__gte=first_day,
+        expense_date__lte=today,
+    )
+
+    total_spent = qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
+    # You can decide what "budget" means – here I’m using salary as monthly budget.
+    # If you have a dedicated budget field, use that instead.
+    budget = user.salary or Decimal("0.00")
+
+    if budget > 0:
+        percentage = float((total_spent / budget) * 100)
+    else:
+        percentage = 0.0
+
+    # Figure out which alert level we’re at: 0, 75, 90, or 100
+    alert_level = 0
+    for threshold in ALERT_THRESHOLDS:
+        if percentage >= threshold:
+            alert_level = threshold
+
+    return {
+        "total_spent": total_spent,
+        "budget": budget,
+        "percentage": percentage,
+        "alert_level": alert_level,
+    }
+
+# -----------------------------------------------------------------------#
+def trigger_budget_alerts_for_user(user: User) -> dict:
+    """
+    Called after creating an expense.
+    Right now it just calculates the summary; later you can plug in email sending.
+    """
     summary = calculate_monthly_summary(user)
 
-    # Send an email only if a threshold (75/90/100) was crossed
-    send_budget_alert_email(user, summary)
+    # TODO: here you could send email / create notification
+    # if summary["alert_level"] in (75, 90, 100): ...
 
-    # Optionally return the summary if callers want to use it
     return summary
