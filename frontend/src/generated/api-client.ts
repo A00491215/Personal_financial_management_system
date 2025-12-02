@@ -11,6 +11,15 @@
  */
 
 /**
+ * * `Canada` - Canada
+ * * `US` - US
+ */
+export enum CountryEnum {
+  Canada = "Canada",
+  US = "US",
+}
+
+/**
  * * `daily` - Daily
  * * `weekly` - Weekly
  * * `monthly` - Monthly
@@ -41,11 +50,11 @@ export interface ChildrenContribution {
    * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
    */
   total_contribution_planned?: string | null;
+  has_total_contribution?: boolean;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  has_total_contribution?: boolean;
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at: string;
@@ -93,11 +102,11 @@ export interface PatchedChildrenContribution {
    * @pattern ^-?\d{0,10}(?:\.\d{0,2})?$
    */
   total_contribution_planned?: string | null;
+  has_total_contribution?: boolean;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  has_total_contribution?: boolean;
   monthly_contribution?: string | null;
   /** @format date-time */
   created_at?: string;
@@ -129,15 +138,47 @@ export interface PatchedMilestone {
 
 export interface PatchedUser {
   user_id?: number;
-  /** @maxLength 150 */
+  /**
+   * @maxLength 150
+   * @pattern ^[A-Za-z\s\-]+$
+   */
   username?: string;
+  /** @maxLength 128 */
+  password?: string;
   /**
    * @format email
    * @maxLength 254
    */
   email?: string;
-  /** @maxLength 128 */
-  password?: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  first_name?: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  last_name?: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  city?: string;
+  /** @maxLength 50 */
+  province_state?: string;
+  /**
+   * * `Canada` - Canada
+   * * `US` - US
+   */
+  country?: CountryEnum;
+  /** @maxLength 20 */
+  postal_code?: string;
+  /**
+   * @maxLength 20
+   * @pattern ^\+?1?\s?[-.()]?\s?\d{3}[-.()]?\s?\d{3}[-.()]?\s?\d{4}$
+   */
+  phone_number?: string;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
@@ -222,15 +263,47 @@ export interface PatchedUserResponse {
 
 export interface User {
   user_id: number;
-  /** @maxLength 150 */
+  /**
+   * @maxLength 150
+   * @pattern ^[A-Za-z\s\-]+$
+   */
   username: string;
+  /** @maxLength 128 */
+  password: string;
   /**
    * @format email
    * @maxLength 254
    */
   email: string;
-  /** @maxLength 128 */
-  password: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  first_name: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  last_name: string;
+  /**
+   * @maxLength 100
+   * @pattern ^[A-Za-z\s\-]+$
+   */
+  city: string;
+  /** @maxLength 50 */
+  province_state: string;
+  /**
+   * * `Canada` - Canada
+   * * `US` - US
+   */
+  country: CountryEnum;
+  /** @maxLength 20 */
+  postal_code: string;
+  /**
+   * @maxLength 20
+   * @pattern ^\+?1?\s?[-.()]?\s?\d{3}[-.()]?\s?\d{3}[-.()]?\s?\d{4}$
+   */
+  phone_number: string;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$

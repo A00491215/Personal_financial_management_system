@@ -1,16 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
-
-
-from django.db import models
-from django.utils import timezone
-from django.contrib.auth.hashers import make_password, check_password
-
-
-from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
-from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 
 
 class UserManager(BaseUserManager):
@@ -37,10 +30,55 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=150)
+
+    # ============================
+    #       NEW VALIDATION RULES
+    # ============================
+    no_special_chars = RegexValidator(
+        regex=r'^[A-Za-z\s\-]+$',
+        message="This field cannot contain numbers or special characters."
+    )
+
+    canadian_postal = RegexValidator(
+        regex=r'^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$',
+        message="Enter a valid Canadian postal code (e.g. A1A 1A1)."
+    )
+
+    us_zip = RegexValidator(
+        regex=r'^\d{5}(-\d{4})?$',
+        message="Enter a valid US ZIP code."
+    )
+
+    phone_validator = RegexValidator(
+        regex=r'^\+?1?\s?[-.()]?\s?\d{3}[-.()]?\s?\d{3}[-.()]?\s?\d{4}$',
+        message="Enter a valid US/Canadian phone number."
+    )
+
+    # ============================
+    #       BASIC FIELDS
+    # ============================
+    username = models.CharField(max_length=150, validators=[no_special_chars])
     email = models.EmailField(unique=True)
 
-    # Financial fields
+    # NEW REQUIRED FIELDS
+    first_name = models.CharField(max_length=100, validators=[no_special_chars])
+    last_name = models.CharField(max_length=100, validators=[no_special_chars])
+
+    phone_number = models.CharField(max_length=20, validators=[phone_validator])
+
+    country = models.CharField(
+        max_length=20,
+        choices=[("Canada", "Canada"), ("US", "US")]
+    )
+
+    province_state = models.CharField(max_length=50)
+    city = models.CharField(max_length=100, validators=[no_special_chars])
+
+    postal_code = models.CharField(max_length=20)
+
+    # ============================
+    #       FINANCIAL FIELDS
+    # ============================
     salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
@@ -51,13 +89,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('yearly', 'Yearly'),
     ]
     budget_preference = models.CharField(max_length=10, choices=BUDGET_PREFERENCES, default='monthly')
-
     email_notification = models.BooleanField(default=False)
 
-    # Required Django fields
+    # ============================
+    #       DJANGO REQUIRED
+    # ============================
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -71,6 +110,26 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    # ============================
+    #   CUSTOM FIELD VALIDATION
+    # ============================
+    def clean(self):
+
+        # Country-specific postal code validation
+        if self.country == "Canada":
+            self.canadian_postal(self.postal_code)
+
+        elif self.country == "US":
+            self.us_zip(self.postal_code)
+
+        else:
+            raise ValidationError({"country": "Country must be Canada or US."})
+
+        # Phone validation already applied via validator
+
+        return super().clean()
+
 
 class Category(models.Model):
     category_id = models.BigAutoField(primary_key=True)
