@@ -8,6 +8,9 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from .models import Expense, User
+# from .milestone_logic import calculate_monthly_summary
+import logging
+logger = logging.getLogger(__name__)
 
 ALERT_THRESHOLDS = [75, 90, 100]
 
@@ -292,28 +295,28 @@ def calculate_monthly_summary(user: User) -> dict:
     """
     Compute this month's spending vs budget for a user.
 
-    Returns a dict compatible with your MonthlySummary serializer:
-    {
-        "total_spent": Decimal,
-        "budget": Decimal,
-        "percentage": float,   # 0–100+
-        "alert_level": int,    # 0, 75, 90, or 100
-    }
+    Returns a dict:
+      {
+        "total_spent": "123.45",
+        "budget": "1000.00",
+        "percentage": 12.3,
+        "alert_level": 0 | 75 | 90 | 100,
+      }
     """
-    today = timezone.now().date()
-    first_day = today.replace(day=1)
 
-    # All expenses for this user in the current month
+    today = timezone.now().date()
+    start_of_month = today.replace(day=1)
+
+    # all expenses for this user in the current month
     qs = Expense.objects.filter(
         user_id=user,
-        expense_date__gte=first_day,
+        expense_date__gte=start_of_month,
         expense_date__lte=today,
     )
 
     total_spent = qs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
-    # You can decide what "budget" means – here I’m using salary as monthly budget.
-    # If you have a dedicated budget field, use that instead.
+    # you can change this if your budget comes from some other field
     budget = user.salary or Decimal("0.00")
 
     if budget > 0:
@@ -321,28 +324,98 @@ def calculate_monthly_summary(user: User) -> dict:
     else:
         percentage = 0.0
 
-    # Figure out which alert level we’re at: 0, 75, 90, or 100
-    alert_level = 0
-    for threshold in ALERT_THRESHOLDS:
-        if percentage >= threshold:
-            alert_level = threshold
+    # decide the alert level
+    if percentage >= 100:
+        alert_level = 100
+    elif percentage >= 90:
+        alert_level = 90
+    elif percentage >= 75:
+        alert_level = 75
+    else:
+        alert_level = 0
 
     return {
-        "total_spent": total_spent,
-        "budget": budget,
+        "total_spent": str(total_spent),
+        "budget": str(budget),
         "percentage": percentage,
         "alert_level": alert_level,
     }
 
+
 # -----------------------------------------------------------------------#
-def trigger_budget_alerts_for_user(user: User) -> dict:
-    """
-    Called after creating an expense.
-    Right now it just calculates the summary; later you can plug in email sending.
-    """
-    summary = calculate_monthly_summary(user)
 
-    # TODO: here you could send email / create notification
-    # if summary["alert_level"] in (75, 90, 100): ...
+def trigger_budget_alerts_for_user(user: User):
+    """
+    Called after an expense is created.
+    Calculates budget summary, optionally sends email alerts,
+    and RETURNS the summary for use by views / API.
+    """
 
+    # 1) Calculate summary
+    try:
+        summary = calculate_monthly_summary(user)
+    except Exception as e:
+        logger.exception("Failed to calculate monthly summary for %s", user)
+        return None
+
+    logger.info("Summary for %s: %s", user.email, summary)
+
+    # 2) If user cannot receive email → skip sending but still return summary
+    if not user.email:
+        logger.info("User %s has no email; skipping alerts.", user)
+        return summary
+
+    if not getattr(user, "email_notification", False):
+        logger.info("Email notifications disabled for %s", user.email)
+        return summary
+
+    # 3) Extract summary details
+    level = int(summary.get("alert_level") or 0)
+    percentage = float(summary.get("percentage") or 0)
+    total_spent = summary.get("total_spent")
+    budget = summary.get("budget")
+
+    # Only send alert at 75, 90, 100%
+    if level not in (75, 90, 100):
+        logger.info("No alert needed for %s (level %s).", user.email, level)
+        return summary
+
+    # 4) Build email
+    subject = f"[Budget Alert] You reached {level}% of your monthly budget"
+
+    message_lines = [
+        f"Hi {user.username},",
+        "",
+        "Your monthly spending has reached an important threshold:",
+        f"• Budget used: {percentage:.1f}%",
+        "",
+    ]
+
+    if total_spent is not None and budget is not None:
+        message_lines.append(f"• Total spent: {total_spent}")
+        message_lines.append(f"• Monthly budget: {budget}")
+
+    message_lines.extend([
+        "",
+        "Please review your expenses in the app.",
+        "",
+        "This alert was sent because you enabled email notifications.",
+    ])
+
+    message = "\n".join(message_lines)
+
+    # 5) Send email safely
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+        logger.info("Budget alert email sent to %s (level %s)", user.email, level)
+    except Exception:
+        logger.exception("Failed to send budget alert email to %s", user.email)
+
+    # ⭐ RETURN SUMMARY — very important for dashboard
     return summary
