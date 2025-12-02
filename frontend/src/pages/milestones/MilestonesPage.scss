@@ -1,0 +1,35 @@
+.milestones-page {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+
+  .milestone-card {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+
+    .status-icon {
+      font-size: 1.8rem;
+      margin-right: 10px;
+    }
+    .icon-success {
+    font-size: 1.4rem;
+    color: #28a745 !important; // green
+  }
+
+  .icon-danger {
+    font-size: 1.4rem;
+    color: #dc3545 !important; // red
+  }
+
+  .milestone-card:last-child {
+    border-bottom: none;
+  }
+
+  .progress {
+    background-color: #e8e8e8;
+  }
+  }
+}

@@ -1,0 +1,254 @@
+# backend/apps/users/serializers.py
+from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.validators import RegexValidator
+from django.contrib.auth.hashers import check_password
+from .models import (
+    User, Category, Expense, ChildrenContribution,
+    Milestone, UserMilestone, UserResponse
+)
+
+class UserSerializer(serializers.ModelSerializer):
+
+    # -----------------------------
+    # VALIDATORS
+    # -----------------------------
+
+    no_special_chars = RegexValidator(
+        regex=r'^[A-Za-z\s\-]+$',
+        message="Only letters, spaces and hyphens are allowed. Digits and special characters are not allowed."
+    )
+
+    ca_postal_validator = RegexValidator(
+        regex=r'^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$',
+        message="Invalid Canadian postal code format (e.g. A1A 1A1)."
+    )
+
+    us_zip_validator = RegexValidator(
+        regex=r'^\d{5}(-\d{4})?$',
+        message="Invalid US ZIP code format (e.g. 12345 or 12345-6789)."
+    )
+
+    phone_validator = RegexValidator(
+        regex=r'^\+?1?\s*\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$',
+        message="Invalid phone number. Must be a valid US/Canadian number."
+    )
+
+    # -----------------------------
+    # CUSTOM FIELD VALIDATION
+    # -----------------------------
+    def validate(self, data):
+        country = data.get("country")
+        postal = data.get("postal_code")
+
+        # Country validation
+        if country not in ["Canada", "US"]:
+            raise serializers.ValidationError({"country": "Country must be Canada or US."})
+
+        # Postal code validation based on country
+        if country == "Canada":
+            self.ca_postal_validator(postal)
+        elif country == "US":
+            self.us_zip_validator(postal)
+
+        # Phone validation only for US/Canada
+        phone = data.get("phone_number")
+        if phone:
+            self.phone_validator(phone)
+
+        return data
+
+    class Meta:
+        model = User
+        fields = [
+            'user_id',
+            'username',
+            'password',
+            'email',
+            'first_name',
+            'last_name',
+            'city',
+            'province_state',
+            'country',
+            'postal_code',
+            'phone_number',
+            'salary',
+            'total_balance',
+            'budget_preference',
+            'email_notification',
+            'created_at',
+            'updated_at',
+        ]
+
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'user_id': {'read_only': True},
+            'created_at': {'read_only': True},
+            'updated_at': {'read_only': True},
+        }
+
+    # -----------------------------------
+    # OVERRIDE CREATE (hash password)
+    # -----------------------------------
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+    # -----------------------------------
+    # OVERRIDE UPDATE
+    # -----------------------------------
+    def update(self, instance, validated_data):
+        if "password" in validated_data:
+            password = validated_data.pop("password")
+            instance.set_password(password)
+        return super().update(instance, validated_data)
+
+
+class LoginSerializer(serializers.Serializer):
+    """Simple login serializer without JWT"""
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('User not found. Please register.')
+
+        if not user.check_password(password):
+            raise serializers.ValidationError('Invalid password')
+
+        return {
+            'user': UserSerializer(user).data,
+            'message': 'Login successful'
+        }
+
+
+# backend/apps/users/serializers.py
+
+class JWTLoginSerializer(serializers.Serializer):
+    """Login serializer with JWT tokens"""
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({'error': 'User not found. Please register.'})
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({'error': 'Invalid password'})
+
+        refresh = RefreshToken()
+        refresh['user_id'] = user.user_id
+        refresh['email'] = user.email
+        
+        access = refresh.access_token
+        access['user_id'] = user.user_id
+        access['email'] = user.email
+
+        return {
+            'user': {
+                'user_id': user.user_id,
+                'username': user.username,
+                'email': user.email,
+                'salary': str(user.salary) if user.salary else None,
+                'total_balance': str(user.total_balance),
+                'budget_preference': user.budget_preference,
+            },
+            'access': str(access),
+            'refresh': str(refresh),
+            'message': 'Login successful'
+        }
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['category_id', 'name']
+        extra_kwargs = {
+            'category_id': {'read_only': True}
+        }
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user_id.username', read_only=True)
+    category_name = serializers.CharField(source='category_id.name', read_only=True)
+
+    class Meta:
+        model = Expense
+        fields = [
+            'expense_date', 'user_id', 'category_id', 'amount',
+            'created_at', 'user_username', 'category_name'
+        ]
+        extra_kwargs = {
+            'created_at': {'read_only': True}
+        }
+
+
+class ChildrenContributionSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user_id.username', read_only=True)
+
+    class Meta:
+        model = ChildrenContribution
+        fields = [
+            'child_id', 'user_id', 'child_name', 'parent_name',
+            'total_contribution_planned', 'has_total_contribution', 'monthly_contribution',
+            'created_at', 'user_username'
+        ]
+        read_only_fields = ["child_id", "created_at", "user_username"]
+
+
+class MilestoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Milestone
+        fields = ['milestone_id', 'title', 'description']
+        extra_kwargs = {
+            'milestone_id': {'read_only': True}
+        }
+
+
+class UserMilestoneSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user_id.username', read_only=True)
+    milestone_title = serializers.CharField(source='milestone_id.title', read_only=True)
+    milestone_details = MilestoneSerializer(source='milestone_id', read_only=True)
+
+    class Meta:
+        model = UserMilestone
+        fields = [
+            'umid', 'user_id', 'milestone_id', 'is_completed',
+            'completed_at', 'user_username', 'milestone_title', 'milestone_details'
+        ]
+        extra_kwargs = {
+            'umid': {'read_only': True}
+        }
+
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user_id.username', read_only=True)
+
+    class Meta:
+        model = UserResponse
+        fields = [
+            'response_id', 'user_id', 'salary_confirmed', 'emergency_savings',
+            'emergency_savings_amount','has_debt', 'debt_amount',
+            'full_emergency_fund', 'full_emergency_fund_amount',
+            'retirement_investing', 'retirement_savings_amount',
+            'has_children', 'children_count', 'bought_home',
+            'pay_off_home', 'mortgage_remaining', 'submitted_at',
+            'user_username'
+        ]
+        extra_kwargs = {
+            'response_id': {'read_only': True},
+            'submitted_at': {'read_only': True}
+        }
