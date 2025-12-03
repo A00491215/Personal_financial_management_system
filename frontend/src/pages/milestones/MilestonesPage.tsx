@@ -21,7 +21,6 @@ const MilestonesPage: React.FC = () => {
   const location = useLocation();
   const fromFinance = location.state?.fromFinance === true;
 
-
   // Fetch finance + children
   useEffect(() => {
     if (!userId) return;
@@ -36,6 +35,50 @@ const MilestonesPage: React.FC = () => {
 
     fetchData();
   }, [userId]);
+
+  // ---------------- STEP LOGIC ----------------
+  const step1 = () => {
+    if (!response?.emergency_savings) return false;
+    return Number(response.emergency_savings_amount) === 1000;
+  };
+
+  const step2 = () => {
+    if (!response?.has_debt) return true;
+    return Number(response.debt_amount) === 0;
+  };
+
+  const step3 = () => {
+    if (!response?.full_emergency_fund) return false;
+    const required = Number(profile?.salary) / 2;
+    return Number(response.full_emergency_fund_amount) === required;
+  };
+
+  const step4 = () => {
+    if (!response?.retirement_investing) return false;
+    const required = (Number(profile?.salary) * 0.15) / 12;
+    return Number(response.retirement_savings_amount) === required;
+  };
+
+  const step5 = () => {
+    if (!response?.has_children) return true;
+    if (response.children_count <= 0) return false;
+
+    return children
+      .slice(0, response.children_count)
+      .every((c: any) => Number(c.total_contribution_planned) > 0);
+  };
+
+  const step6 = () => {
+    if (!response?.bought_home) return false;
+
+    if (response.bought_home && response.pay_off_home) return true;
+
+    if (response.bought_home && !response.pay_off_home) {
+      return Number(response.mortgage_remaining) === 0;
+    }
+
+    return false;
+  };
 
   // Evaluate milestones
   useEffect(() => {
@@ -53,51 +96,7 @@ const MilestonesPage: React.FC = () => {
     };
 
     evaluate();
-  }, [response, children]);
-
-  // ---------------- STEP LOGIC ----------------
-  const step1 = () => {
-    if (!response.emergency_savings) return false;
-    return Number(response.emergency_savings_amount) === 1000;
-  };
-
-  const step2 = () => {
-    if (!response.has_debt) return true;
-    return Number(response.debt_amount) === 0;
-  };
-
-  const step3 = () => {
-    if (!response.full_emergency_fund) return false;
-    const required = Number(profile?.salary) / 2;
-    return Number(response.full_emergency_fund_amount) === required;
-  };
-
-  const step4 = () => {
-    if (!response.retirement_investing) return false;
-    const required = (Number(profile?.salary) * 0.15) / 12;
-    return Number(response.retirement_savings_amount) === required;
-  };
-
-  const step5 = () => {
-    if (!response.has_children) return true;
-    if (response.children_count <= 0) return false;
-
-    return children
-      .slice(0, response.children_count)
-      .every((c: any) => Number(c.total_contribution_planned) > 0);
-  };
-
-  const step6 = () => {
-    if (!response.bought_home) return false;
-
-    if (response.bought_home && response.pay_off_home) return true;
-
-    if (response.bought_home && !response.pay_off_home) {
-      return Number(response.mortgage_remaining) === 0;
-    }
-
-    return false;
-  };
+  }, [response, children, step1, step2, step3, step4, step5, step6]);
 
   const milestones = [
     { title: "Step-1 Starter Emergency Fund: Save $1,000" },
@@ -105,7 +104,7 @@ const MilestonesPage: React.FC = () => {
     { title: "Step-3 Full Emergency Fund: Save 3–6 months of expenses" },
     { title: "Step-4 Invest for Retirement: Invest 15% of your income" },
     { title: "Step-5 College Fund: Save for your children’s education" },
-    { title: "Step-6 Pay Off Home: Eliminate your mortgage early" }
+    { title: "Step-6 Pay Off Home: Eliminate your mortgage early" },
   ];
 
   const allDone = completed === 6;
@@ -137,7 +136,7 @@ const MilestonesPage: React.FC = () => {
               role="progressbar"
               style={{
                 width: `${percentage}%`,
-                transition: "width 0.8s ease"
+                transition: "width 0.8s ease",
               }}
             ></div>
           </div>
@@ -160,20 +159,22 @@ const MilestonesPage: React.FC = () => {
         {/* -------- WHEN ALL STEPS COMPLETED -------- */}
         {allDone && (
           <div className="mt-4 p-3 rounded bg-light border text-success fw-semibold">
-            🎉 Congratulations, you have completed all milestones!  
-            <br /><br/>
-
+            🎉 Congratulations, you have completed all milestones!
+            <br />
+            <br />
             {fromFinance && (
               <>
-                📩 An email has been sent to <strong>{profile?.email}</strong> with encouragement to begin the final Baby Step.
+                📩 An email has been sent to{" "}
+                <strong>{profile?.email}</strong> with encouragement to begin
+                the final Baby Step.
                 <hr />
               </>
             )}
-            
             <strong>Next Step (Step-7): Build Wealth & Give</strong>
             <br />
             <span className="text-dark">
-              Achieve financial freedom, grow your wealth, and give generously to others.
+              Achieve financial freedom, grow your wealth, and give generously
+              to others.
             </span>
           </div>
         )}
@@ -181,7 +182,8 @@ const MilestonesPage: React.FC = () => {
         {/* -------- WHEN NOT COMPLETED -------- */}
         {!allDone && (
           <div className="mt-4 p-3 rounded bg-light border text-primary fw-semibold">
-            💡 You’re doing great! Keep going and complete all milestones to reach financial freedom.
+            💡 You’re doing great! Keep going and complete all milestones to
+            reach financial freedom.
           </div>
         )}
       </div>
