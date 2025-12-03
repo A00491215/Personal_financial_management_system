@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
@@ -8,7 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-me')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'backend']
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,0.0.0.0,backend'
+).split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -62,19 +66,28 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', default='fullstack_db'),
-        'USER': os.getenv('DB_USER', default='fullstack_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', default='fullstack_password'),
-        'HOST': os.getenv('DB_HOST', default='localhost'),
-        'PORT': os.getenv('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # Cloud DB (e.g. Postgres on Koyeb)
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600),
     }
-}
+else:
+    # Local DB (your existing MySQL config)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', default='fullstack_db'),
+            'USER': os.getenv('DB_USER', default='fullstack_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', default='fullstack_password'),
+            'HOST': os.getenv('DB_HOST', default='localhost'),
+            'PORT': os.getenv('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -127,8 +140,13 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    
 ]
+
+extra_cors = os.getenv("CORS_ALLOWED_ORIGINS")
+if extra_cors:
+    # e.g. "https://your-netlify-site.netlify.app,https://another-origin.com"
+    CORS_ALLOWED_ORIGINS += [origin.strip() for origin in extra_cors.split(",") if origin.strip()]
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Financial Planning API',
@@ -139,20 +157,14 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOW_CREDENTIALS = True
 
-print(os.environ['DB_HOST'])
+
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
-# EMAIL_HOST_USER = "yourgmail@gmail.com"
-# EMAIL_HOST_PASSWORD = "your-app-password"
 EMAIL_USE_TLS = True
-# DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-# 👉 your Gmail address
-EMAIL_HOST_USER = os.getenv("musfiqur.rahman1620@gmail.com")
 
-# 👉 the 16-char APP PASSWORD (no spaces!)
-EMAIL_HOST_PASSWORD = os.getenv("wfez zlod wwml zqxf")
-
-# From address used in send_mail when 'from_email=None'
+# Read from env vars: safe for git & deployment
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")      # your Gmail address
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")  # your app password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or "noreply@example.com"
