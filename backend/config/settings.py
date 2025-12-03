@@ -65,11 +65,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME', default='fullstack_db'),
-        'USER': config('DB_USER', default='fullstack_user'),
-        'PASSWORD': config('DB_PASSWORD', default='fullstack_password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'NAME': os.getenv('DB_NAME', default='fullstack_db'),
+        'USER': os.getenv('DB_USER', default='fullstack_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', default='fullstack_password'),
+        'HOST': os.getenv('DB_HOST', default='localhost'),
+        'PORT': os.getenv('DB_PORT', default='3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
@@ -149,10 +149,10 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 # DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # 👉 your Gmail address
-EMAIL_HOST_USER = "musfiqur.rahman1620@gmail.com"
+EMAIL_HOST_USER = os.getenv("musfiqur.rahman1620@gmail.com")
 
 # 👉 the 16-char APP PASSWORD (no spaces!)
-EMAIL_HOST_PASSWORD = "wfez zlod wwml zqxf"
+EMAIL_HOST_PASSWORD = os.getenv("wfez zlod wwml zqxf")
 
 # From address used in send_mail when 'from_email=None'
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or "noreply@example.com"
