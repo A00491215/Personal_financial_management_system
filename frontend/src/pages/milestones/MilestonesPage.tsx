@@ -16,6 +16,8 @@ const MilestonesPage: React.FC = () => {
   const [response, setResponse] = useState<any>(null);
   const [children, setChildren] = useState<any[]>([]);
   const [status, setStatus] = useState<boolean[]>([]);
+  const [emailSent, setEmailSent] = useState<boolean>(false);
+
   const completed = status.filter(Boolean).length;
   const percentage = Math.round((completed / 6) * 100);
   const location = useLocation();
@@ -53,7 +55,30 @@ const MilestonesPage: React.FC = () => {
     };
 
     evaluate();
-  }, [response, children]);
+  }, [response, children, profile]);
+
+  // Send email once when all milestones are completed & user came from Finance
+useEffect(() => {
+  if (!userId) return;
+  if (!fromFinance) return; // only trigger automatically when coming from Finance page
+  if (emailSent) return; // avoid duplicate emails
+
+  const completedSteps = status.filter(Boolean).length;
+
+  if (completedSteps === 6) {
+    const sendEmail = async () => {
+      try {
+        await financeService.sendMilestoneCompletionEmail(userId);
+        setEmailSent(true);
+      } catch (error) {
+        console.error("Failed to send milestone completion email:", error);
+      }
+    };
+
+    sendEmail();
+  }
+}, [status, userId, fromFinance, emailSent]); // ✅ NEW effect
+
 
   // ---------------- STEP LOGIC ----------------
   const step1 = () => {
@@ -159,24 +184,29 @@ const MilestonesPage: React.FC = () => {
 
         {/* -------- WHEN ALL STEPS COMPLETED -------- */}
         {allDone && (
-          <div className="mt-4 p-3 rounded bg-light border text-success fw-semibold">
-            🎉 Congratulations, you have completed all milestones!  
-            <br /><br/>
+  <div className="mt-4 p-3 rounded bg-light border text-success fw-semibold">
+    🎉 Congratulations, you have completed all milestones!
+    <br />
+    <br />
 
-            {fromFinance && (
-              <>
-                📩 An email has been sent to <strong>{profile?.email}</strong> with encouragement to begin the final Baby Step.
-                <hr />
-              </>
-            )}
-            
-            <strong>Next Step (Step-7): Build Wealth & Give</strong>
-            <br />
-            <span className="text-dark">
-              Achieve financial freedom, grow your wealth, and give generously to others.
-            </span>
-          </div>
-        )}
+    {emailSent && ( // ✅ changed from fromFinance to emailSent
+      <>
+        📩 An email has been sent to{" "}
+        <strong>{profile?.email}</strong> congratulating you on
+        completing all milestones.
+        <hr />
+      </>
+    )}
+
+    <strong>Next Step (Step-7): Build Wealth & Give</strong>
+    <br />
+    <span className="text-dark">
+      Achieve financial freedom, grow your wealth, and give generously
+      to others.
+    </span>
+  </div>
+)}
+
 
         {/* -------- WHEN NOT COMPLETED -------- */}
         {!allDone && (

@@ -60,4 +60,23 @@ export const financeService = {
     const res = await apiClient.api.userResponsesMilestonesStatusRetrieve();
     return res.data;
   },
+
+  // ✅ NEW: send completion email when all milestones are done
+  async sendMilestoneCompletionEmail(userId: number): Promise<void> {
+    /**
+     * IMPORTANT:
+     * - This assumes you add a backend endpoint like:
+     *   POST /api/user-responses/milestones-email/
+     *   with body or params including userId.
+     * - After you add that to your OpenAPI schema and regenerate
+     *   the client, you'll get a method here similar to:
+     *   apiClient.api.userResponsesMilestonesEmailCreate(...)
+     *
+     * Update the method name/params below to match your generated client.
+     */
+
+    await apiClient.api.userResponsesMilestonesEmailCreate({
+      userId,
+    } as any);
+  },
 };
