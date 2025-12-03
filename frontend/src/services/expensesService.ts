@@ -1,10 +1,14 @@
 // frontend/src/services/expensesService.ts
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8000/api"; // change to http://backend:8000/api if needed in Docker
+/**
+ * Base URL from environment (Netlify: REACT_APP_API_URL).
+ */
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE,
 });
 
 // Attach JWT token from localStorage to every request
@@ -61,17 +65,13 @@ export async function fetchExpensesForUser(
     user_id: userId,
   };
 
-  if (filters.date_from) {
-    params.date_from = filters.date_from;
-  }
-  if (filters.date_to) {
-    params.date_to = filters.date_to;
-  }
+  if (filters.date_from) params.date_from = filters.date_from;
+  if (filters.date_to) params.date_to = filters.date_to;
   if (typeof filters.category_id === "number") {
     params.category_id = filters.category_id;
   }
 
-  const response = await api.get<Expense[]>("/expenses/", { params });
+  const response = await api.get<Expense[]>("/api/expenses/", { params });
   return response.data;
 }
 
@@ -85,7 +85,7 @@ export async function createExpense(data: {
   amount: string;
   expense_date: string; // "YYYY-MM-DD"
 }): Promise<Expense> {
-  const response = await api.post<Expense>("/expenses/", data);
+  const response = await api.post<Expense>("/api/expenses/", data);
   return response.data;
 }
 
@@ -94,7 +94,9 @@ export async function createExpense(data: {
  * Backend: GET /api/expenses/monthly-summary/
  */
 export async function fetchMonthlySummary(): Promise<MonthlySummary> {
-  const response = await api.get<MonthlySummary>("/expenses/monthly-summary/");
+  const response = await api.get<MonthlySummary>(
+    "/api/expenses/monthly-summary/"
+  );
   return response.data;
 }
 
@@ -103,6 +105,6 @@ export async function fetchMonthlySummary(): Promise<MonthlySummary> {
  * Backend: GET /api/categories/
  */
 export async function fetchCategories(): Promise<Category[]> {
-  const response = await api.get<Category[]>("/categories/");
+  const response = await api.get<Category[]>("/api/categories/");
   return response.data;
 }

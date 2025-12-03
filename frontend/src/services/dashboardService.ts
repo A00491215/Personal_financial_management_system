@@ -17,24 +17,39 @@ export interface DashboardSummary {
   monthly_expenses: string;
   savings_rate: number;
   recent_expenses: DashboardExpense[];
-  milestone_status: any; // you can define a proper type later
+  milestone_status: any; // TODO: type this more strictly later
 }
 
-export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  // Get JWT token from localStorage (use the same key that your login page uses)
+/**
+ * Shared Axios instance for dashboard calls.
+ * Base URL comes from REACT_APP_API_URL so it works on Netlify + Koyeb.
+ */
+const API_BASE =
+  process.env.REACT_APP_API_URL || "http://localhost:8000"; // fallback for local dev
+
+const api = axios.create({
+  baseURL: API_BASE,
+});
+
+// Attach JWT token on every request
+api.interceptors.request.use((config) => {
   const token =
     localStorage.getItem("access") || localStorage.getItem("accessToken");
 
-  const response = await axios.get<DashboardSummary>(
-    "http://localhost:8000/api/users/dashboard/",
-    {
-      headers: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {},
-    }
-  );
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
+  return config;
+});
+
+/**
+ * Fetch the dashboard summary for the logged-in user.
+ * Backend endpoint: GET /api/users/dashboard/
+ * (the user is determined from the JWT token).
+ */
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const response = await api.get<DashboardSummary>("/api/users/dashboard/");
   return response.data;
 }
